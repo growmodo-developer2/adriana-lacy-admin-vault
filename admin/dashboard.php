@@ -49,11 +49,15 @@ function tav_dashboard_on_load(): void
     // Handle Fulfillment Form Submission (Save & Notify)
     if (isset($_GET['view']) && $_GET['view'] === 'fulfill' && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tav_fulfill_nonce']) && wp_verify_nonce($_POST['tav_fulfill_nonce'], 'tav_fulfill_action')) {
         $debug_log = ABSPATH . 'tav_debug.log';
-        file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "Fulfillment POST reached for ID " . (isset($_GET['request_id']) ? $_GET['request_id'] : 'NONE') . "\n", FILE_APPEND);
+        if ( defined('WP_DEBUG') && WP_DEBUG ) {
+            file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "Fulfillment POST reached for ID " . (isset($_GET['request_id']) ? $_GET['request_id'] : 'NONE') . "\n", FILE_APPEND);
+        }
         
         $req_id = isset($_GET['request_id']) ? (int)$_GET['request_id'] : 0;
         
-        file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "Fulfillment POST processing started\n", FILE_APPEND);
+        if ( defined('WP_DEBUG') && WP_DEBUG ) {
+            file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "Fulfillment POST processing started\n", FILE_APPEND);
+        }
         
         $selected_storytellers = isset($_POST['storytellers']) ? array_map('intval', $_POST['storytellers']) : [];
         
@@ -62,7 +66,9 @@ function tav_dashboard_on_load(): void
             $current_status = get_post_meta($req_id, 'status', true);
             $fulfillable_statuses = ['in_vetting', 'matching', 'paid', 'ready_review'];
             if (!in_array($current_status, $fulfillable_statuses, true)) {
-                file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "Blocked fulfillment — request #{$req_id} status is '{$current_status}' (not paid)\n", FILE_APPEND);
+                if ( defined('WP_DEBUG') && WP_DEBUG ) {
+                    file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "Blocked fulfillment — request #{$req_id} status is '{$current_status}' (not paid)\n", FILE_APPEND);
+                }
                 wp_safe_redirect(admin_url('admin.php?page=tav-dashboard&view=requests&error=not_paid'));
                 exit;
             }
@@ -129,30 +135,42 @@ function tav_dashboard_on_load(): void
                         $filter_pri = has_filter('wp_mail', ['SISANU_Emails_Catch_All', 'wp_mail_catch_all']);
                     }
                     
-                    file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "Catch-all filter priority: " . ($filter_pri ?: "NOT FOUND") . "\n", FILE_APPEND);
-                    file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "Calling wp_mail with parameters: " . json_encode($mail_data) . "\n", FILE_APPEND);
+                    if ( defined('WP_DEBUG') && WP_DEBUG ) {
+                        file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "Catch-all filter priority: " . ($filter_pri ?: "NOT FOUND") . "\n", FILE_APPEND);
+                        file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "Calling wp_mail with parameters: " . json_encode($mail_data) . "\n", FILE_APPEND);
+                    }
                     
                     $sent = wp_mail($to, $subject, $body);
-                    file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "wp_mail result: " . ($sent ? "SUCCESS" : "FAILED") . "\n", FILE_APPEND);
+                    if ( defined('WP_DEBUG') && WP_DEBUG ) {
+                        file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "wp_mail result: " . ($sent ? "SUCCESS" : "FAILED") . "\n", FILE_APPEND);
+                    }
                     
                     // Log for debugging (simple error log)
                     if (!$sent) {
                         error_log("TAV Email Alert: Failed to send fulfillment email to {$to} for request #{$req_id}");
                     }
                 } else {
-                    file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "No client user found for request #$req_id\n", FILE_APPEND);
+                    if ( defined('WP_DEBUG') && WP_DEBUG ) {
+                        file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "No client user found for request #$req_id\n", FILE_APPEND);
+                    }
                 }
             } else {
-                file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "No storytellers selected\n", FILE_APPEND);
+                if ( defined('WP_DEBUG') && WP_DEBUG ) {
+                    file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "No storytellers selected\n", FILE_APPEND);
+                }
             }
             
             // Redirect back to requests list
             $redirect_url = admin_url('admin.php?page=tav-dashboard&view=requests&notified=1');
-            file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "Redirecting to $redirect_url\n", FILE_APPEND);
+            if ( defined('WP_DEBUG') && WP_DEBUG ) {
+                file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "Redirecting to $redirect_url\n", FILE_APPEND);
+            }
             wp_redirect($redirect_url);
             exit;
         } else {
-            file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "Invalid Request ID: $req_id\n", FILE_APPEND);
+            if ( defined('WP_DEBUG') && WP_DEBUG ) {
+                file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "Invalid Request ID: $req_id\n", FILE_APPEND);
+            }
         }
     }
 
