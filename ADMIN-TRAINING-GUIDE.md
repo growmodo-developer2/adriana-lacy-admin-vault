@@ -330,14 +330,6 @@ The most common cause is email verification being enabled in Ultimate Member.
 3. Click **Refund** and follow the WooCommerce refund process
 4. Manually update the request status to "Archived" if needed
 
-### "How do I seed demo storytellers?"
-
-Visit: `/wp-admin/admin.php?page=tav-dashboard&tav_seed=1`
-
-This creates 5 sample storyteller profiles for testing.
-
----
-
 ## Quick Reference: Daily Workflow
 
 ```
