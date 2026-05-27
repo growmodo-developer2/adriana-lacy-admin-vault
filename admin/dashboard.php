@@ -279,22 +279,81 @@ function tav_get_total_storytellers(): int
 }
 
 /**
- * Average authenticity score.
+ * Match acceptance rate.
+ *
+ * Denominator: all published request posts whose `status` meta is one of
+ *              'ready_review', 'assigned', or 'completed' (i.e. reached review stage).
+ * Numerator:   subset with status 'assigned' or 'completed' where the
+ *              `client_feedback` meta contains at least one value === 'interested'.
+ *
+ * Returns an array:
+ *   'value'       => formatted string — e.g. '60.0%' or 'N/A'
+ *   'numerator'   => int
+ *   'denominator' => int
  */
-function tav_get_avg_authenticity(): int
+function tav_get_match_acceptance_rate(): array
 {
-    global $wpdb;
+    $review_statuses   = ['ready_review', 'assigned', 'completed'];
+    $accepted_statuses = ['assigned', 'completed'];
 
-    $avg = $wpdb->get_var(
-        "SELECT AVG(CAST(pm.meta_value AS UNSIGNED))
-         FROM {$wpdb->postmeta} pm
-         INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
-         WHERE pm.meta_key = 'authenticity_score'
-           AND p.post_type = 'storyteller'
-           AND p.post_status = 'publish'"
-    );
+    $post_ids = get_posts([
+        'post_type'      => 'request',
+        'post_status'    => 'publish',
+        'posts_per_page' => -1,
+        'fields'         => 'ids',
+        'meta_query'     => [
+            [
+                'key'     => 'status',
+                'value'   => $review_statuses,
+                'compare' => 'IN',
+            ],
+        ],
+    ]);
 
-    return $avg ? (int)round((float)$avg) : 0;
+    $denominator = count($post_ids);
+
+    if ($denominator === 0) {
+        return ['value' => 'N/A', 'numerator' => 0, 'denominator' => 0];
+    }
+
+    $numerator = 0;
+
+    foreach ($post_ids as $post_id) {
+        // Only requests that have actually been acted on count toward the numerator.
+        $status = get_post_meta($post_id, 'status', true);
+        if (!in_array($status, $accepted_statuses, true)) {
+            continue;
+        }
+
+        $raw = get_post_meta($post_id, 'client_feedback', true);
+
+        if (empty($raw)) {
+            continue;
+        }
+
+        // Decode: try JSON first, then PHP serialisation.
+        if (is_string($raw)) {
+            $decoded = json_decode($raw, true);
+            if (!is_array($decoded)) {
+                $decoded = maybe_unserialize($raw);
+            }
+        } else {
+            $decoded = $raw;
+        }
+
+        // Check if any feedback value in the array equals 'interested'.
+        if (is_array($decoded) && in_array('interested', $decoded, true)) {
+            $numerator++;
+        }
+    }
+
+    $percentage = round(($numerator / $denominator) * 100, 1);
+
+    return [
+        'value'       => number_format($percentage, 1) . '%',
+        'numerator'   => $numerator,
+        'denominator' => $denominator,
+    ];
 }
 
 /**
@@ -414,6 +473,186 @@ function tav_format_metric(int $num): string
 }
 
 /**
+ * Human-readable time-ago string from a Unix timestamp.
+ * e.g. "just now", "4 minutes ago", "2 hours ago", "3 days ago".
+ */
+function tav_time_ago(int $timestamp): string
+{
+    $diff = time() - $timestamp;
+
+    if ($diff < 60) {
+        return __('just now', 'the-admin-vault');
+    }
+    if ($diff < 3600) {
+        $n = (int) round($diff / 60);
+        return sprintf(_n('%d minute ago', '%d minutes ago', $n, 'the-admin-vault'), $n);
+    }
+    if ($diff < 86400) {
+        $n = (int) round($diff / 3600);
+        return sprintf(_n('%d hour ago', '%d hours ago', $n, 'the-admin-vault'), $n);
+    }
+    if ($diff < 2592000) { // < 30 days
+        $n = (int) round($diff / 86400);
+        return sprintf(_n('%d day ago', '%d days ago', $n, 'the-admin-vault'), $n);
+    }
+    if ($diff < 31536000) { // < 365 days
+        $n = (int) round($diff / 2592000);
+        return sprintf(_n('%d month ago', '%d months ago', $n, 'the-admin-vault'), $n);
+    }
+    $n = (int) round($diff / 31536000);
+    return sprintf(_n('%d year ago', '%d years ago', $n, 'the-admin-vault'), $n);
+}
+
+/**
+ * Unified activity feed — chronological merge of up to $limit events across:
+ *   1. New requests submitted    (status: pending_payment — uses post_date)
+ *   2. Payments received         (status: paid            — uses post_modified)
+ *   3. Requests fulfilled        (status: ready_review    — uses post_modified)
+ *   4. Client selections made    (status: assigned        — uses post_modified)
+ *   5. New storytellers added    (storyteller post_date)
+ *   6. New clients registered    (user user_registered)
+ *
+ * Each event has keys: timestamp (int), type (string), icon (string), label (string).
+ */
+function tav_get_activity_feed(int $limit = 10): array
+{
+    $events = [];
+
+    // ── 1–4: Request-based events ─────────────────────────────────────────────
+    $requests = get_posts([
+        'post_type'      => 'request',
+        'post_status'    => 'any',
+        'posts_per_page' => $limit * 3, // over-fetch so the merged sort has enough candidates
+        'orderby'        => 'modified',
+        'order'          => 'DESC',
+        'meta_query'     => [
+            [
+                'key'     => 'status',
+                'value'   => ['pending_payment', 'paid', 'ready_review', 'assigned'],
+                'compare' => 'IN',
+            ],
+        ],
+    ]);
+
+    foreach ($requests as $post) {
+        $status      = get_post_meta($post->ID, 'status', true);
+        $author_id   = (int) $post->post_author;
+        $client_name = $author_id
+            ? (get_the_author_meta('display_name', $author_id) ?: __('Unknown client', 'the-admin-vault'))
+            : __('Unknown client', 'the-admin-vault');
+        $title = $post->post_title ?: __('(untitled)', 'the-admin-vault');
+
+        switch ($status) {
+            case 'pending_payment':
+                $events[] = [
+                    'timestamp' => strtotime($post->post_date),
+                    'type'      => 'new_request',
+                    'icon'      => 'dashicons-clipboard',
+                    'label'     => sprintf(
+                        /* translators: 1: client name, 2: request title */
+                        __('%1$s submitted a new request: %2$s', 'the-admin-vault'),
+                        $client_name,
+                        $title
+                    ),
+                ];
+                break;
+
+            case 'paid':
+                $events[] = [
+                    'timestamp' => strtotime($post->post_modified),
+                    'type'      => 'payment',
+                    'icon'      => 'dashicons-money-alt',
+                    'label'     => sprintf(
+                        /* translators: 1: client name, 2: request title */
+                        __('%1$s completed payment for %2$s', 'the-admin-vault'),
+                        $client_name,
+                        $title
+                    ),
+                ];
+                break;
+
+            case 'ready_review':
+                $events[] = [
+                    'timestamp' => strtotime($post->post_modified),
+                    'type'      => 'fulfilled',
+                    'icon'      => 'dashicons-yes-alt',
+                    'label'     => sprintf(
+                        /* translators: %s: request title */
+                        __('Request fulfilled: %s — storytellers sent to client', 'the-admin-vault'),
+                        $title
+                    ),
+                ];
+                break;
+
+            case 'assigned':
+                $events[] = [
+                    'timestamp' => strtotime($post->post_modified),
+                    'type'      => 'selections',
+                    'icon'      => 'dashicons-heart',
+                    'label'     => sprintf(
+                        /* translators: 1: client name, 2: request title */
+                        __('%1$s selected storytellers for %2$s', 'the-admin-vault'),
+                        $client_name,
+                        $title
+                    ),
+                ];
+                break;
+        }
+    }
+
+    // ── 5: New storyteller events ──────────────────────────────────────────────
+    $storytellers = get_posts([
+        'post_type'      => 'storyteller',
+        'post_status'    => 'publish',
+        'posts_per_page' => $limit,
+        'orderby'        => 'date',
+        'order'          => 'DESC',
+    ]);
+
+    foreach ($storytellers as $post) {
+        $events[] = [
+            'timestamp' => strtotime($post->post_date),
+            'type'      => 'new_storyteller',
+            'icon'      => 'dashicons-id-alt',
+            'label'     => sprintf(
+                /* translators: %s: storyteller name */
+                __('New storyteller added: %s', 'the-admin-vault'),
+                $post->post_title ?: __('(untitled)', 'the-admin-vault')
+            ),
+        ];
+    }
+
+    // ── 6: New client registrations ───────────────────────────────────────────
+    $client_role_slugs = apply_filters('tav_client_role_slugs', ['um_client', 'client']);
+    $new_clients = get_users([
+        'role__in' => (array) $client_role_slugs,
+        'number'   => $limit,
+        'orderby'  => 'registered',
+        'order'    => 'DESC',
+    ]);
+
+    foreach ($new_clients as $user) {
+        $events[] = [
+            'timestamp' => strtotime($user->user_registered),
+            'type'      => 'new_client',
+            'icon'      => 'dashicons-admin-users',
+            'label'     => sprintf(
+                /* translators: %s: client display name */
+                __('New client registered: %s', 'the-admin-vault'),
+                $user->display_name ?: $user->user_login
+            ),
+        ];
+    }
+
+    // ── Sort newest-first, return top $limit ───────────────────────────────────
+    usort($events, static function (array $a, array $b): int {
+        return $b['timestamp'] <=> $a['timestamp'];
+    });
+
+    return array_slice($events, 0, $limit);
+}
+
+/**
  * Get initials from a name.
  */
 function tav_get_initials(string $name): string
@@ -484,6 +723,120 @@ function tav_ajax_get_storyteller_details(): void
         'samples' => $samples,
         'thumbnail' => get_the_post_thumbnail_url($st_id, 'medium'),
     ]);
+}
+
+/*--------------------------------------------------------------
+ * AJAX: Fetch Client Details for Modal
+ *------------------------------------------------------------*/
+add_action('wp_ajax_tav_get_client_details', 'tav_ajax_get_client_details');
+
+function tav_ajax_get_client_details(): void
+{
+    check_ajax_referer('tav_dashboard_nonce', 'nonce');
+
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => __('Insufficient permissions.', 'the-admin-vault')], 403);
+    }
+
+    $client_id = isset($_GET['client_id']) ? (int) $_GET['client_id'] : 0;
+    $user      = $client_id ? get_userdata($client_id) : false;
+
+    if (!$user) {
+        wp_send_json_error(['message' => __('Invalid client ID.', 'the-admin-vault')]);
+    }
+
+    $company = (string) get_user_meta($client_id, 'organization_name', true);
+    $status  = (string) get_user_meta($client_id, 'ccc_client_status', true) ?: 'active';
+    $notes   = (string) get_user_meta($client_id, 'ccc_client_notes',  true);
+
+    // Tier label map — prefer live CCC pricing if the plugin is active.
+    $tier_labels = [
+        'quick'      => 'Quick Match',
+        'custom'     => 'Custom Search',
+        'premium'    => 'Premium Search',
+        'retainer'   => 'Monthly Retainer',
+        'enterprise' => 'Enterprise',
+    ];
+    if (function_exists('ccc_get_pricing')) {
+        $p = ccc_get_pricing();
+        foreach (($p['tiers'] ?? []) as $key => $tier) {
+            $tier_labels[$key] = $tier['label'];
+        }
+    }
+
+    // Request history (up to 20 most recent).
+    $requests_raw = get_posts([
+        'post_type'      => 'request',
+        'post_status'    => 'any',
+        'author'         => $client_id,
+        'posts_per_page' => 20,
+        'orderby'        => 'date',
+        'order'          => 'DESC',
+    ]);
+
+    $requests = [];
+    foreach ($requests_raw as $req) {
+        $pkg_key   = (string) get_post_meta($req->ID, 'package_tier', true);
+        $pkg_label = $tier_labels[$pkg_key] ?? ucfirst($pkg_key ?: '—');
+
+        $order_id = (int) get_post_meta($req->ID, 'woo_order_id', true);
+        $total    = '—';
+        if ($order_id && class_exists('WooCommerce')) {
+            $order = wc_get_order($order_id);
+            if ($order) {
+                $total = '$' . number_format((float) $order->get_total(), 2);
+            }
+        }
+
+        $requests[] = [
+            'id'      => $req->ID,
+            'title'   => ($req->post_title ?: "Request #{$req->ID}"),
+            'package' => $pkg_label,
+            'date'    => date_i18n('M j, Y', strtotime($req->post_date)),
+            'total'   => $total,
+        ];
+    }
+
+    wp_send_json_success([
+        'id'       => $client_id,
+        'name'     => $user->display_name,
+        'email'    => $user->user_email,
+        'company'  => $company,
+        'status'   => $status,
+        'notes'    => $notes,
+        'requests' => $requests,
+    ]);
+}
+
+/*--------------------------------------------------------------
+ * AJAX: Save Client Status + Notes
+ *------------------------------------------------------------*/
+add_action('wp_ajax_tav_save_client_details', 'tav_ajax_save_client_details');
+
+function tav_ajax_save_client_details(): void
+{
+    check_ajax_referer('tav_dashboard_nonce', 'nonce');
+
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => __('Insufficient permissions.', 'the-admin-vault')], 403);
+    }
+
+    $client_id = isset($_POST['client_id']) ? (int) $_POST['client_id'] : 0;
+    if (!$client_id || !get_userdata($client_id)) {
+        wp_send_json_error(['message' => __('Invalid client ID.', 'the-admin-vault')]);
+    }
+
+    $allowed_statuses = ['active', 'suspended', 'vip'];
+    $status = (isset($_POST['status']) && in_array($_POST['status'], $allowed_statuses, true))
+        ? $_POST['status']
+        : 'active';
+
+    $notes = isset($_POST['notes']) ? sanitize_textarea_field(wp_unslash($_POST['notes'])) : '';
+
+    update_user_meta($client_id, 'ccc_client_status', $status);
+    update_user_meta($client_id, 'ccc_client_notes',  $notes);
+
+    wp_send_json_success(['message' => __('Changes saved.', 'the-admin-vault')]);
 }
 
 /*--------------------------------------------------------------

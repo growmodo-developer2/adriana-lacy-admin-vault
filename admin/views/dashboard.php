@@ -4,11 +4,11 @@ defined('ABSPATH') || exit;
 $total           = tav_get_total_storytellers();
 $status_counts   = tav_get_status_counts();
 $verified_count  = tav_get_verified_count();
-$avg_score       = tav_get_avg_authenticity();
+$match_rate      = tav_get_match_acceptance_rate();
 $revenue         = tav_get_revenue();
 $active_requests = tav_get_active_requests_count();
 $recent_st       = tav_get_recent_storytellers(5);
-$recent_requests = tav_get_recent_requests(5);
+$activity_feed   = tav_get_activity_feed(10);
 ?>
 
 <!-- Page Header -->
@@ -48,56 +48,53 @@ $recent_requests = tav_get_recent_requests(5);
 
     <div class="tav-stat-card">
         <div class="tav-stat-top">
-            <div class="tav-stat-icon growth"><span class="dashicons dashicons-chart-line"></span></div>
-            <span class="tav-stat-badge <?php echo $avg_score >= 50 ? 'positive' : 'neutral'; ?>"><?php echo esc_html($avg_score); ?>%</span>
+            <div class="tav-stat-icon growth"><span class="dashicons dashicons-thumbs-up"></span></div>
+            <span class="tav-stat-badge <?php echo $match_rate['denominator'] > 0 ? 'positive' : 'neutral'; ?>">
+                <?php if ($match_rate['denominator'] > 0): ?>
+                    <?php echo esc_html($match_rate['numerator'] . ' of ' . $match_rate['denominator']); ?>
+                <?php else: ?>
+                    <?php esc_html_e('No data', 'the-admin-vault'); ?>
+                <?php endif; ?>
+            </span>
         </div>
-        <div class="tav-stat-value"><?php echo esc_html($avg_score); ?>%</div>
-        <div class="tav-stat-label"><?php esc_html_e('Avg. Authenticity Score', 'the-admin-vault'); ?></div>
+        <div class="tav-stat-value"><?php echo esc_html($match_rate['value']); ?></div>
+        <div class="tav-stat-label"><?php esc_html_e('Match Acceptance Rate', 'the-admin-vault'); ?></div>
+        <div class="tav-stat-sublabel" style="font-size:11px;color:#94a3b8;margin-top:2px;"><?php esc_html_e('Clients who accepted at least one match', 'the-admin-vault'); ?></div>
     </div>
 </div>
 
 <div class="tav-panels-grid">
     <div class="tav-panel">
-        <div class="tav-panel-header"><h2 class="tav-panel-title"><?php esc_html_e('Recent Requests / Activities', 'the-admin-vault'); ?></h2></div>
-        <?php if (!empty($recent_requests)): ?>
+        <div class="tav-panel-header"><h2 class="tav-panel-title"><?php esc_html_e('Recent Activity', 'the-admin-vault'); ?></h2></div>
+        <?php if (!empty($activity_feed)):
+            // Colour map — one accent per event type.
+            $activity_colors = [
+                'new_request'     => '#2271b1',
+                'payment'         => '#16a34a',
+                'fulfilled'       => '#0891b2',
+                'selections'      => '#db2777',
+                'new_storyteller' => '#7c3aed',
+                'new_client'      => '#ea580c',
+            ];
+        ?>
             <ul class="tav-panel-list">
-                <?php foreach ($recent_requests as $post):
-                    $status = get_field('status', $post->ID) ?: get_post_meta($post->ID, 'status', true) ?: 'pending';
-
-                    // Custom Logic for auto assigned status
-                    $client_selected = get_field('client_selected_storytellers', $post->ID) ?: get_post_meta($post->ID, 'client_selected_storytellers', true);
-                    if (!empty($client_selected)) {
-                        $status = 'assigned';
-                    }
-
-                    $labels = [
-                        'pending_payment'    => __('Payment Pending', 'the-admin-vault'),
-                        'pending'            => __('Pending',         'the-admin-vault'),
-                        'paid'               => __('Paid',            'the-admin-vault'),
-                        'in_vetting'         => __('In Vetting',      'the-admin-vault'),
-                        'matching'           => __('Matching',        'the-admin-vault'),
-                        'ready_review'       => __('Ready to Review', 'the-admin-vault'),
-                        'assigned'           => __('Assigned',        'the-admin-vault'),
-                        'completed'          => __('Completed',       'the-admin-vault'),
-                        'archived'           => __('Archived',        'the-admin-vault'),
-                        'enterprise_inquiry' => __('Enterprise Inquiry', 'the-admin-vault'),
-                    ];
-
-                    $author_id = (int) $post->post_author;
-                    $client_name = $author_id ? (get_the_author_meta('display_name', $author_id) ?: __('Unknown', 'the-admin-vault')) : __('Unknown', 'the-admin-vault');
-                    $submitted = mysql2date('M j, Y', $post->post_date);
-                    ?>
+                <?php foreach ($activity_feed as $event):
+                    $icon_color = $activity_colors[$event['type']] ?? '#64748b';
+                ?>
                     <li>
-                        <div class="tav-request-info">
-                            <p class="tav-request-name"><a href="<?php echo esc_url(get_edit_post_link($post->ID)); ?>" style="color:inherit;text-decoration:none;"><?php echo esc_html($post->post_title); ?></a></p>
-                            <p class="tav-request-org"><?php echo esc_html($client_name . ' · ' . $submitted); ?></p>
+                        <div class="tav-request-info" style="display:flex;align-items:flex-start;gap:10px;flex:1;min-width:0;">
+                            <span class="dashicons <?php echo esc_attr($event['icon']); ?>"
+                                  style="color:<?php echo esc_attr($icon_color); ?>;flex-shrink:0;margin-top:2px;font-size:16px;width:16px;height:16px;"></span>
+                            <div>
+                                <p class="tav-request-name" style="margin:0 0 2px;"><?php echo esc_html($event['label']); ?></p>
+                                <p class="tav-request-org" style="margin:0;"><?php echo esc_html(tav_time_ago($event['timestamp'])); ?></p>
+                            </div>
                         </div>
-                        <span class="tav-status <?php echo esc_attr($status); ?>"><?php echo esc_html($labels[$status] ?? ucwords(str_replace('_', ' ', $status))); ?></span>
                     </li>
                 <?php endforeach; ?>
             </ul>
         <?php else: ?>
-            <div class="tav-empty"><?php esc_html_e('No requests yet.', 'the-admin-vault'); ?></div>
+            <div class="tav-empty"><?php esc_html_e('No activity yet.', 'the-admin-vault'); ?></div>
         <?php endif; ?>
         <div class="tav-panel-footer">
             <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=requests')); ?>"><?php esc_html_e('View All Requests', 'the-admin-vault'); ?></a>
