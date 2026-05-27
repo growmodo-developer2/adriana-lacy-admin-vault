@@ -123,7 +123,203 @@ jQuery(document).ready(function ($) {
         });
     });
 
-    $('.tav-modal-close, .tav-modal-overlay').on('click', function () {
+    // Storyteller modal: close on overlay or × button.
+    // Uses a scoped selector so it doesn't interfere with the client modal below.
+    $(document).on('click', '#tav-storyteller-modal .tav-modal-close, #tav-storyteller-modal .tav-modal-overlay', function () {
         $modal.fadeOut(200);
+    });
+
+    // Legacy direct binding kept as a fallback for any other modals
+    // that share .tav-modal-close / .tav-modal-overlay without an explicit handler.
+    $('.tav-modal-close, .tav-modal-overlay').not('#tav-client-modal .tav-modal-close, #tav-client-modal .tav-modal-overlay').on('click', function () {
+        $modal.fadeOut(200);
+    });
+
+    // ── Client Detail Modal ─────────────────────────────────────────
+    const $clientModal        = $('#tav-client-modal');
+    const $clientModalContent = $('#tav-client-modal-content');
+
+    // Helper: build a 1–2 letter initials string from a display name.
+    function tavInitials(name) {
+        return (name || '').trim().split(/\s+/)
+            .map(function (w) { return w.charAt(0).toUpperCase(); })
+            .slice(0, 2).join('');
+    }
+
+    // Open modal and fetch details via AJAX.
+    $(document).on('click', '.tav-view-client', function () {
+        var clientId = $(this).data('client-id');
+        $clientModal.fadeIn(200);
+        $clientModalContent.html(
+            '<div style="text-align:center;padding:40px 0;">' +
+            '<span class="tav-spinner" style="display:inline-block;"></span>' +
+            '<p style="margin:12px 0 0;color:#64748b;">Loading details…</p></div>'
+        );
+
+        $.ajax({
+            url:  tavData.ajaxurl,
+            type: 'GET',
+            data: {
+                action:    'tav_get_client_details',
+                client_id: clientId,
+                nonce:     tavData.nonce,
+            },
+            success: function (response) {
+                if (!response.success) {
+                    $clientModalContent.html(
+                        '<div class="tav-modal-error" style="color:#dc2626;padding:20px;">' +
+                        (response.data && response.data.message ? response.data.message : 'Error loading details.') +
+                        '</div>'
+                    );
+                    return;
+                }
+
+                var d = response.data;
+                var initials = tavInitials(d.name);
+
+                // Status <select> options.
+                var statusOptions = [
+                    { value: 'active',    label: 'Active' },
+                    { value: 'suspended', label: 'Suspended' },
+                    { value: 'vip',       label: 'VIP' },
+                ].map(function (opt) {
+                    return '<option value="' + opt.value + '"' +
+                           (d.status === opt.value ? ' selected' : '') +
+                           '>' + opt.label + '</option>';
+                }).join('');
+
+                // Request history rows.
+                var reqRows;
+                if (d.requests && d.requests.length > 0) {
+                    reqRows = d.requests.map(function (r) {
+                        return '<tr>' +
+                            '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + r.title + '</td>' +
+                            '<td><span class="tav-pill" style="--pill-fg:#2271b1;--pill-bg:#e7f3fe;">' + r.package + '</span></td>' +
+                            '<td class="tav-cell-secondary">' + r.date + '</td>' +
+                            '<td style="font-weight:600;">' + r.total + '</td>' +
+                        '</tr>';
+                    }).join('');
+                } else {
+                    reqRows = '<tr><td colspan="4" class="tav-empty" style="text-align:center;padding:16px;color:#94a3b8;">No requests found.</td></tr>';
+                }
+
+                var fieldLabel = 'display:block;font-size:12px;font-weight:600;color:#64748b;' +
+                                 'margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;';
+                var fieldInput = 'width:100%;padding:8px 10px;border:1px solid #d1d5db;' +
+                                 'border-radius:6px;font-size:14px;box-sizing:border-box;';
+
+                var html =
+                    // ── Profile header ─────────────────────────
+                    '<div class="tav-st-profile-header" style="display:flex;align-items:center;gap:16px;margin-bottom:24px;">' +
+                        '<div class="tav-boutique-avatar" style="background:#e7f3fe;color:#2271b1;flex-shrink:0;width:52px;height:52px;font-size:18px;">' + initials + '</div>' +
+                        '<div>' +
+                            '<h3 style="margin:0 0 3px;font-size:17px;font-weight:700;color:#1e293b;">' + d.name + '</h3>' +
+                            (d.company ? '<p style="margin:0 0 2px;font-weight:500;color:#334155;">' + d.company + '</p>' : '') +
+                            '<p class="tav-cell-secondary" style="margin:0;">' + d.email + '</p>' +
+                        '</div>' +
+                    '</div>' +
+
+                    // ── Status + Notes ─────────────────────────
+                    '<div style="margin-bottom:24px;">' +
+                        '<div style="margin-bottom:16px;">' +
+                            '<label for="tav-client-status" style="' + fieldLabel + '">Status</label>' +
+                            '<select id="tav-client-status" style="' + fieldInput + '">' + statusOptions + '</select>' +
+                        '</div>' +
+                        '<div>' +
+                            '<label for="tav-client-notes" style="' + fieldLabel + '">Internal Notes</label>' +
+                            '<textarea id="tav-client-notes" rows="4" style="' + fieldInput + 'resize:vertical;">' + d.notes + '</textarea>' +
+                        '</div>' +
+                    '</div>' +
+
+                    // ── Request history ────────────────────────
+                    '<div style="margin-bottom:24px;">' +
+                        '<h4 style="margin:0 0 12px;font-size:14px;font-weight:600;color:#1e293b;">Request History</h4>' +
+                        '<div style="overflow-x:auto;">' +
+                            '<table class="tav-boutique-table" style="width:100%;min-width:480px;">' +
+                                '<thead>' +
+                                    '<tr>' +
+                                        '<th>Request</th>' +
+                                        '<th>Package</th>' +
+                                        '<th>Date</th>' +
+                                        '<th>Total Paid</th>' +
+                                    '</tr>' +
+                                '</thead>' +
+                                '<tbody>' + reqRows + '</tbody>' +
+                            '</table>' +
+                        '</div>' +
+                    '</div>' +
+
+                    // ── Save footer ────────────────────────────
+                    '<div style="display:flex;align-items:center;gap:12px;padding-top:16px;border-top:1px solid #e2e8f0;">' +
+                        '<button type="button" id="tav-client-save-btn" ' +
+                                'class="tav-btn tav-btn-primary" ' +
+                                'data-client-id="' + d.id + '" ' +
+                                'style="padding:10px 22px;background:#2271b1;color:#fff;border:none;border-radius:6px;' +
+                                       'font-size:14px;font-weight:600;cursor:pointer;">' +
+                            'Save Changes' +
+                        '</button>' +
+                        '<span id="tav-client-save-status" style="font-size:13px;"></span>' +
+                    '</div>';
+
+                $clientModalContent.html(html);
+            },
+            error: function () {
+                $clientModalContent.html(
+                    '<div class="tav-modal-error" style="color:#dc2626;padding:20px;">Failed to connect to server.</div>'
+                );
+            },
+        });
+    });
+
+    // Close client modal on overlay click or × button.
+    $(document).on('click', '#tav-client-modal .tav-modal-close, #tav-client-modal .tav-modal-overlay', function () {
+        $clientModal.fadeOut(200);
+    });
+
+    // Save client status + notes.
+    $(document).on('click', '#tav-client-save-btn', function () {
+        var $btn       = $(this);
+        var clientId   = $btn.data('client-id');
+        var status     = $('#tav-client-status').val();
+        var notes      = $('#tav-client-notes').val();
+        var $saveStatus = $('#tav-client-save-status');
+
+        $btn.prop('disabled', true).text('Saving…');
+        $saveStatus.text('').css('color', '');
+
+        $.ajax({
+            url:  tavData.ajaxurl,
+            type: 'POST',
+            data: {
+                action:    'tav_save_client_details',
+                client_id: clientId,
+                status:    status,
+                notes:     notes,
+                nonce:     tavData.nonce,
+            },
+            success: function (response) {
+                $btn.prop('disabled', false).text('Save Changes');
+                if (response.success) {
+                    $saveStatus.text('Saved!').css('color', '#16a34a');
+                    setTimeout(function () { $saveStatus.text(''); }, 3000);
+                } else {
+                    $saveStatus.text(
+                        (response.data && response.data.message) ? response.data.message : 'Error saving.'
+                    ).css('color', '#dc2626');
+                }
+            },
+            error: function () {
+                $btn.prop('disabled', false).text('Save Changes');
+                $saveStatus.text('Network error — please try again.').css('color', '#dc2626');
+            },
+        });
+    });
+
+    // Escape key closes whichever modal is open.
+    $(document).on('keydown', function (e) {
+        if (e.key === 'Escape' || e.keyCode === 27) {
+            if ($modal.is(':visible'))       $modal.fadeOut(200);
+            if ($clientModal.is(':visible')) $clientModal.fadeOut(200);
+        }
     });
 });

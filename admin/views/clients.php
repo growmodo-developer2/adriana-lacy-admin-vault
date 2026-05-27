@@ -128,9 +128,12 @@ $search_query = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
                         <td><span class="tav-cell-secondary"><?php echo esc_html($registered); ?></span></td>
                         <td class="actions">
                             <div class="tav-actions-wrap">
-                                <a href="<?php echo esc_url(get_edit_user_link($client_id)); ?>" class="tav-btn-icon" title="Edit User">
-                                    <span class="dashicons dashicons-edit"></span>
-                                </a>
+                                <button type="button"
+                                        class="tav-btn-icon tav-view-client"
+                                        data-client-id="<?php echo esc_attr($client_id); ?>"
+                                        title="<?php esc_attr_e('View Detail', 'the-admin-vault'); ?>">
+                                    <span class="dashicons dashicons-visibility"></span>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -150,11 +153,43 @@ $search_query = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
     <div class="tav-pagination">
         <?php
         echo paginate_links([
-            'base' => add_query_arg('paged', '%#%'),
-            'format' => '',
-            'total' => $total_pages,
+            'base'    => add_query_arg('paged', '%#%'),
+            'format'  => '',
+            'total'   => $total_pages,
             'current' => $paged,
         ]);
         ?>
     </div>
 <?php endif; ?>
+
+<!-- ── Client Detail Modal ──────────────────────────────────────── -->
+<div id="tav-client-modal" style="display:none; position:fixed; inset:0; z-index:99999;"
+     role="dialog" aria-modal="true"
+     aria-label="<?php esc_attr_e('Client detail', 'the-admin-vault'); ?>">
+
+    <div class="tav-modal-overlay" style="position:absolute; inset:0; background:rgba(0,0,0,.45);"></div>
+
+    <div class="tav-modal-wrap" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+         background:#fff; border-radius:12px; width:90%; max-width:720px; max-height:88vh;
+         overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.25); display:flex; flex-direction:column;">
+
+        <div class="tav-modal-header" style="display:flex; align-items:center; justify-content:space-between;
+             padding:20px 24px; border-bottom:1px solid #e2e8f0; flex-shrink:0;">
+            <h2 class="tav-modal-title" style="margin:0; font-size:17px; font-weight:700; color:#1e293b;">
+                <?php esc_html_e('Client Detail', 'the-admin-vault'); ?>
+            </h2>
+            <button type="button" class="tav-modal-close tav-btn-icon"
+                    aria-label="<?php esc_attr_e('Close', 'the-admin-vault'); ?>">
+                <span class="dashicons dashicons-no-alt"></span>
+            </button>
+        </div>
+
+        <div class="tav-modal-body" id="tav-client-modal-content" style="padding:24px; flex:1;">
+            <div class="tav-modal-loader" style="text-align:center; padding:40px 0;">
+                <span class="tav-spinner" style="display:inline-block;"></span>
+                <p style="margin:12px 0 0; color:#64748b;"><?php esc_html_e('Loading…', 'the-admin-vault'); ?></p>
+            </div>
+        </div>
+
+    </div><!-- /.tav-modal-wrap -->
+</div><!-- /#tav-client-modal -->
