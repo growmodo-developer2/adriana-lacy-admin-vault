@@ -912,3 +912,90 @@ function tav_load_niche_choices($field) {
     $field['choices'] = tav_get_niches();
     return $field;
 }
+
+/*--------------------------------------------------------------
+ * 13. Persist aggregate engagement rate on storyteller save
+ *
+ * Fires after ACF saves all fields (priority 20, after ACF's
+ * own save at priority 10). Reads the platforms_repeater rows,
+ * averages every engagement_rate value that is numeric and > 0,
+ * and writes the result to the flat meta key
+ * tav_avg_engagement_rate (2 decimal places).
+ *
+ * This flat key is then used for the fulfillment filter query
+ * instead of the LIKE wildcard on platforms_repeater_%_engagement_rate.
+ *------------------------------------------------------------*/
+add_action('acf/save_post', 'tav_persist_avg_engagement_rate', 20);
+
+function tav_persist_avg_engagement_rate($post_id): void
+{
+    // $post_id can be an integer or a string like 'options'; skip non-posts.
+    if (!is_numeric($post_id)) {
+        return;
+    }
+
+    $post_id = (int) $post_id;
+
+    if (get_post_type($post_id) !== 'storyteller') {
+        return;
+    }
+
+    $rates = [];
+    $rows  = get_field('platforms_repeater', $post_id); // array of rows after ACF save
+
+    if (!empty($rows) && is_array($rows)) {
+        foreach ($rows as $row) {
+            $rate = isset($row['engagement_rate']) ? (float) $row['engagement_rate'] : 0.0;
+            if ($rate > 0) {
+                $rates[] = $rate;
+            }
+        }
+    }
+
+    $avg = !empty($rates) ? round(array_sum($rates) / count($rates), 2) : 0.0;
+
+    update_post_meta($post_id, 'tav_avg_engagement_rate', $avg);
+}
+
+/*--------------------------------------------------------------
+ * 14. One-time backfill: populate tav_avg_engagement_rate on
+ *     all existing storyteller posts.
+ *
+ * Guarded by the option tav_engagement_backfill_done so it
+ * only runs once — on the first admin page load after this
+ * version of the plugin is deployed.
+ *------------------------------------------------------------*/
+add_action('admin_init', 'tav_backfill_engagement_rates');
+
+function tav_backfill_engagement_rates(): void
+{
+    if (get_option('tav_engagement_backfill_done')) {
+        return;
+    }
+
+    $post_ids = get_posts([
+        'post_type'      => 'storyteller',
+        'post_status'    => 'publish',
+        'posts_per_page' => -1,
+        'fields'         => 'ids',
+    ]);
+
+    foreach ($post_ids as $post_id) {
+        $rates = [];
+        $rows  = get_field('platforms_repeater', $post_id);
+
+        if (!empty($rows) && is_array($rows)) {
+            foreach ($rows as $row) {
+                $rate = isset($row['engagement_rate']) ? (float) $row['engagement_rate'] : 0.0;
+                if ($rate > 0) {
+                    $rates[] = $rate;
+                }
+            }
+        }
+
+        $avg = !empty($rates) ? round(array_sum($rates) / count($rates), 2) : 0.0;
+        update_post_meta($post_id, 'tav_avg_engagement_rate', $avg);
+    }
+
+    update_option('tav_engagement_backfill_done', true);
+}

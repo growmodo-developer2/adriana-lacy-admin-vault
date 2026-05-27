@@ -108,8 +108,11 @@ if ($engagement_filter) {
         '10_plus'   => [10, 100],
     ];
     if (isset($eng_ranges[$engagement_filter])) {
+        // Use the persisted flat key (tav_avg_engagement_rate) instead of a
+        // wildcard LIKE on platforms_repeater_%_engagement_rate — faster and
+        // reliable because the meta key is exact and the value is indexed.
         $meta_queries[] = [
-            'key'     => 'platforms_repeater_%_engagement_rate',
+            'key'     => 'tav_avg_engagement_rate',
             'value'   => $eng_ranges[$engagement_filter],
             'type'    => 'DECIMAL',
             'compare' => 'BETWEEN',

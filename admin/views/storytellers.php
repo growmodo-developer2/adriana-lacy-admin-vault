@@ -119,8 +119,6 @@ if ($is_storytellers):
                         $niche_list = [];
                         $plat_list = [];
                         $followers = 0;
-                        $total_eng = 0;
-                        $plat_count = 0;
 
                         if (have_rows('platforms_repeater', $post->ID)) {
                             while (have_rows('platforms_repeater', $post->ID)) {
@@ -128,22 +126,17 @@ if ($is_storytellers):
                                 $p_name = get_sub_field('platform_name');
                                 $p_name_label = ucfirst($p_name); // Simplified label
                                 $plat_list[] = $p_name_label;
-                                
+
                                 $followers += (int)get_sub_field('follower_count');
-                                
-                                $eng = (float)get_sub_field('engagement_rate');
-                                if ($eng > 0) {
-                                    $total_eng += $eng;
-                                    $plat_count++;
-                                }
                             }
                         }
 
                         $niche_terms = wp_get_post_terms($post->ID, 'vs_niche', ['fields' => 'names']);
                         $niche = !empty($niche_terms) ? implode(', ', $niche_terms) : '—';
-                        
-                        $plat_str = !empty($plat_list) ? implode(', ', array_unique($plat_list)) : '—';
-                        $engagement = $plat_count > 0 ? round($total_eng / $plat_count, 1) : 0;
+
+                        $plat_str    = !empty($plat_list) ? implode(', ', array_unique($plat_list)) : '—';
+                        // Read the pre-calculated average written by tav_persist_avg_engagement_rate.
+                        $engagement  = (float) get_post_meta($post->ID, 'tav_avg_engagement_rate', true);
 
                         $status = get_field('campaign_status', $post->ID) ?: 'prospect';
                         $initials = tav_get_initials($post->post_title);
