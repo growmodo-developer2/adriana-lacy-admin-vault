@@ -1765,3 +1765,18 @@
 }
 .tav-brief-value p:first-child { margin-top: 0; }
 .tav-brief-value p:last-child { margin-bottom: 0; }
+
+/* ── Revenue Chart ─────────────────────────────────────────── */
+.tav-chart-filters { display:flex; gap:6px; }
+.tav-chart-btn {
+    padding:4px 12px; font-size:12px;
+    border:1px solid #ddd; border-radius:4px;
+    background:#fff; cursor:pointer; color:#666;
+    transition: all .15s ease;
+}
+.tav-chart-btn:hover { border-color:#269EB2; color:#269EB2; }
+.tav-chart-btn.tav-chart-active {
+    background:#269EB2; color:#fff;
+    border-color:#269EB2; font-weight:600;
+}
+.tav-revenue-chart-panel canvas { max-height:280px; }

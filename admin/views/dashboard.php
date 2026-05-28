@@ -63,7 +63,119 @@ $activity_feed   = tav_get_activity_feed(10);
     </div>
 </div>
 
+<?php $chart_data = tav_get_revenue_chart_data('30days'); ?>
+<div class="tav-panel tav-revenue-chart-panel" style="margin-bottom:24px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:20px 24px 16px;">
+        <h3 style="margin:0; font-size:15px; font-weight:700; color:#1e293b;"><?php esc_html_e('Revenue Overview', 'the-admin-vault'); ?></h3>
+        <div class="tav-chart-filters">
+            <button class="tav-chart-btn tav-chart-active" data-period="30days"><?php esc_html_e('30 Days', 'the-admin-vault'); ?></button>
+            <button class="tav-chart-btn" data-period="7days"><?php esc_html_e('7 Days', 'the-admin-vault'); ?></button>
+            <button class="tav-chart-btn" data-period="24hours"><?php esc_html_e('24 Hours', 'the-admin-vault'); ?></button>
+            <button class="tav-chart-btn" data-period="alltime"><?php esc_html_e('All Time', 'the-admin-vault'); ?></button>
+        </div>
+    </div>
+    <div style="padding:0 24px 24px;">
+        <canvas id="tav-revenue-chart" height="80"></canvas>
+    </div>
+</div>
+<script>
+(function(){
+    var chartData = <?php echo wp_json_encode($chart_data); ?>;
+    var ctx = document.getElementById('tav-revenue-chart');
+    if (!ctx || typeof Chart === 'undefined') return;
+    var revenueChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: chartData.labels,
+            datasets: [{
+                label: 'Revenue ($)',
+                data: chartData.values,
+                backgroundColor: 'rgba(38,158,178,0.6)',
+                borderColor: '#269EB2',
+                borderWidth: 1,
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { callback: function(v){ return '$' + v.toLocaleString(); } }
+                }
+            }
+        }
+    });
+
+    document.querySelectorAll('.tav-chart-btn').forEach(function(btn){
+        btn.addEventListener('click', function(){
+            document.querySelectorAll('.tav-chart-btn').forEach(function(b){
+                b.classList.remove('tav-chart-active');
+            });
+            this.classList.add('tav-chart-active');
+            var period = this.dataset.period;
+            jQuery.post(ajaxurl, {
+                action: 'tav_get_chart_data',
+                nonce: tavData.nonce,
+                period: period
+            }, function(res){
+                if (res.success) {
+                    revenueChart.data.labels = res.data.labels;
+                    revenueChart.data.datasets[0].data = res.data.values;
+                    revenueChart.update();
+                }
+            });
+        });
+    });
+})();
+</script>
+
 <div class="tav-panels-grid">
+    <?php $pending_fulfillment = tav_get_pending_fulfillment_requests(5); ?>
+    <div class="tav-panel tav-fulfillment-center">
+        <div class="tav-panel-header">
+            <h3><?php esc_html_e('Request Fulfillment Center', 'the-admin-vault'); ?></h3>
+            <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=requests')); ?>" class="tav-panel-link"><?php esc_html_e('View all', 'the-admin-vault'); ?></a>
+        </div>
+        <?php if (empty($pending_fulfillment)): ?>
+            <p class="tav-empty-state"><?php esc_html_e('No requests pending fulfillment.', 'the-admin-vault'); ?></p>
+        <?php else: ?>
+            <table class="tav-mini-table">
+                <thead>
+                    <tr>
+                        <th><?php esc_html_e('Project', 'the-admin-vault'); ?></th>
+                        <th><?php esc_html_e('Client', 'the-admin-vault'); ?></th>
+                        <th><?php esc_html_e('Status', 'the-admin-vault'); ?></th>
+                        <th><?php esc_html_e('Due', 'the-admin-vault'); ?></th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($pending_fulfillment as $item): ?>
+                        <tr>
+                            <td class="tav-mini-title"><?php echo esc_html($item['title']); ?></td>
+                            <td><?php echo esc_html($item['client']); ?></td>
+                            <td><?php echo tav_render_status_pill($item['status']); ?></td>
+                            <td>
+                                <?php if (!empty($item['due_date'])): ?>
+                                    <?php echo esc_html(date_i18n('M j', strtotime($item['due_date']))); ?>
+                                <?php else: ?>
+                                    <span class="tav-cell-secondary">—</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=fulfill&request_id=' . (int) $item['id'])); ?>" class="tav-btn-sm tav-btn-primary">
+                                    <?php esc_html_e('Fulfill', 'the-admin-vault'); ?>
+                                </a>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
+    </div>
+
     <div class="tav-panel">
         <div class="tav-panel-header"><h2 class="tav-panel-title"><?php esc_html_e('Recent Activity', 'the-admin-vault'); ?></h2></div>
         <?php if (!empty($activity_feed)):

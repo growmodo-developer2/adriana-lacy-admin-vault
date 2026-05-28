@@ -193,6 +193,14 @@ function tav_dashboard_on_load(): void
         );
 
         wp_enqueue_script(
+            'chartjs',
+            'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js',
+            [],
+            '4.4.0',
+            true
+        );
+
+        wp_enqueue_script(
             'tav-dashboard',
             TAV_PLUGIN_URL . 'assets/js/tav-dashboard.js',
             ['jquery'],
@@ -395,6 +403,52 @@ function tav_get_revenue(): array
     }
 
     return $result;
+}
+
+/**
+ * Revenue grouped by day/month for the selected period.
+ * Returns ['labels' => [...], 'values' => [...]]
+ */
+function tav_get_revenue_chart_data(string $period = '30days'): array
+{
+    if (!class_exists('WooCommerce')) {
+        return ['labels' => [], 'values' => []];
+    }
+
+    $args = [
+        'status' => ['completed', 'processing'],
+        'type'   => 'shop_order',
+        'limit'  => -1,
+        'return' => 'objects',
+    ];
+
+    if ($period === '7days') {
+        $args['date_created'] = '>' . strtotime('-7 days');
+    } elseif ($period === '30days') {
+        $args['date_created'] = '>' . strtotime('-30 days');
+    } elseif ($period === '24hours') {
+        $args['date_created'] = '>' . strtotime('-24 hours');
+    }
+    // 'alltime': no date filter
+
+    $orders = wc_get_orders($args);
+    $by_day = [];
+
+    foreach ($orders as $order) {
+        $created = $order->get_date_created();
+        if (!$created) continue;
+        $group = ($period === 'alltime')
+            ? date('Y-m', $created->getTimestamp())   // group by month for all-time
+            : date('Y-m-d', $created->getTimestamp()); // group by day otherwise
+        $by_day[$group] = ($by_day[$group] ?? 0.0) + (float) $order->get_total();
+    }
+
+    ksort($by_day);
+
+    return [
+        'labels' => array_keys($by_day),
+        'values' => array_values($by_day),
+    ];
 }
 
 /**
@@ -870,6 +924,20 @@ function tav_ajax_save_client_details(): void
 
     wp_send_json_success(['message' => __('Changes saved.', 'the-admin-vault')]);
 }
+
+/*--------------------------------------------------------------
+ * AJAX: Revenue chart data
+ *------------------------------------------------------------*/
+add_action('wp_ajax_tav_get_chart_data', function (): void {
+    check_ajax_referer('tav_dashboard_nonce', 'nonce');
+    if (!current_user_can('edit_storytellers')) {
+        wp_send_json_error('Unauthorized', 403);
+    }
+    $allowed = ['7days', '30days', 'alltime', '24hours'];
+    $period  = sanitize_text_field($_POST['period'] ?? '30days');
+    if (!in_array($period, $allowed, true)) $period = '30days';
+    wp_send_json_success(tav_get_revenue_chart_data($period));
+});
 
 /*--------------------------------------------------------------
  * Render
