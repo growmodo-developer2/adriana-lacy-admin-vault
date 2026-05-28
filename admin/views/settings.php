@@ -33,21 +33,21 @@ if (
 /*──────────────────────────────────────────────────────────────────────
  * Load saved options (with defaults)
  *────────────────────────────────────────────────────────────────────*/
-$fulfill_subject  = get_option('tav_email_fulfill_subject',  'Your storytellers are ready!');
+$fulfill_subject  = get_option('tav_email_fulfill_subject',  'Your Curated Storytellers are Ready to View!');
 $fulfill_body     = get_option('tav_email_fulfill_body',
-    "Hi {client_name},\n\nWe have found some great storytellers for your project {project_name}:\n\n{storyteller_list}\n\nLog in to view them here: {link}\n\nBest,\nThe Team");
+    "Hi {{client_name}},\n\nWe have found some great storytellers for your project {{project_name}}:\n\n{{storyteller_list}}\n\nLog in to view them here: {{platform_url}}\n\nBest,\nThe Team");
 
-$payment_subject  = get_option('tav_email_payment_subject',  'Payment Confirmed — We\'re On It!');
+$payment_subject  = get_option('tav_email_payment_subject',  'Your Payment Receipt from VerifiedStorytellers.com (Amount: {{total_amount}})');
 $payment_body     = get_option('tav_email_payment_body',
-    "Hi {client_name},\n\nGreat news — your payment has been confirmed!\n\nProject: {project_name}\nPackage: {package}\nAmount: {total}\nExpected Delivery: {delivery}\n\nWhat happens next:\n1. Our team is now reviewing your brief\n2. We'll source and vet storytellers that match your criteria\n3. You'll receive an email when your storytellers are ready to review\n\nTrack your request: {link}\n\nBest,\nThe Verified Storytellers Team");
+    "Hi {{client_name}},\n\nGreat news — your payment has been confirmed!\n\nProject: {{project_name}}\nPackage: {{package}}\nAmount: {{total_amount}}\nExpected Delivery: {{delivery}}\n\nWhat happens next:\n1. Our team is now reviewing your brief\n2. We'll source and vet storytellers that match your criteria\n3. You'll receive an email when your storytellers are ready to review\n\nTrack your request: {{platform_url}}\n\nBest,\nThe Verified Storytellers Team");
 
-$received_subject = get_option('tav_email_received_subject', 'Request Received: {project_name}');
+$received_subject = get_option('tav_email_received_subject', 'We\'ve received your Storyteller Search Request! (ID: {{request_id}})');
 $received_body    = get_option('tav_email_received_body',
-    "Hi {client_name},\n\nWe've received your search request: \"{project_name}\".\n\nPackage: {package}\nExpected delivery: {delivery}\n\nYou can track progress on your dashboard:\n{link}\n\nBest,\nThe Verified Storytellers Team");
+    "Hi {{client_name}},\n\nWe've received your search request: \"{{project_name}}\".\n\nPackage: {{package}}\nExpected delivery: {{delivery}}\n\nYou can track progress on your dashboard:\n{{platform_url}}\n\nBest,\nThe Verified Storytellers Team");
 
-$reset_subject    = get_option('tav_email_reset_subject',   'Reset your password — {site_name}');
+$reset_subject    = get_option('tav_email_reset_subject',   'Your Password Reset Request for VerifiedStorytellers.com');
 $reset_body       = get_option('tav_email_reset_body',
-    "Hi {user_name},\n\nYou requested a password reset. Click the link below to set a new password:\n\n{reset_link}\n\nIf you did not request this, ignore this email.");
+    "Hi {{user_name}},\n\nYou requested a password reset. Click the link below to set a new password:\n\n{{reset_link}}\n\nIf you did not request this, ignore this email.");
 
 /*──────────────────────────────────────────────────────────────────────
  * Niches
@@ -112,6 +112,15 @@ $preview_reset_url   = site_url('/wp-login.php?action=rp');
 .tav-preview-meta td:first-child { width: 68px; font-weight: 600; color: #64748b; padding-right: 12px; }
 .tav-preview-hr     { border: none; border-top: 2px solid #e2e8f0; margin: 0 0 18px; }
 #tav-preview-body   { font-size: 14px; line-height: 1.75; color: #334155; }
+
+/* ── Field hint subtitle ────────────────────────────────────────── */
+.tav-field-hint     { font-size: 12px; color: #666; margin: 2px 0 6px; }
+
+/* ── Per-tab footer (Preview + Save) ───────────────────────────── */
+.tav-template-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e5e5; }
+
+/* ── Click-to-copy placeholder chips ───────────────────────────── */
+.tav-ph-box code[data-copy] { cursor: pointer; transition: background .2s; }
 </style>
 
 <div class="tav-page-header">
@@ -169,31 +178,35 @@ $preview_reset_url   = site_url('/wp-login.php?action=rp');
 
                     <table class="form-table" role="presentation">
                         <tr>
-                            <th scope="row"><label for="tav_email_received_subject"><?php esc_html_e('Subject', 'the-admin-vault'); ?></label></th>
+                            <th scope="row"><label for="tav_email_received_subject"><?php esc_html_e('Subject Line', 'the-admin-vault'); ?></label></th>
                             <td><input name="tav_email_received_subject" type="text" id="tav_email_received_subject" value="<?php echo esc_attr($received_subject); ?>" class="regular-text"></td>
                         </tr>
                         <tr>
-                            <th scope="row"><label for="tav_email_received_body"><?php esc_html_e('Body', 'the-admin-vault'); ?></label></th>
+                            <th scope="row"><label for="tav_email_received_body"><?php esc_html_e('Email Body', 'the-admin-vault'); ?></label><p class="tav-field-hint"><?php esc_html_e('Supports standard text, HTML, and basic Markdown for formatting.', 'the-admin-vault'); ?></p></th>
                             <td><textarea name="tav_email_received_body" id="tav_email_received_body" rows="9" cols="50" class="large-text code"><?php echo esc_textarea($received_body); ?></textarea></td>
                         </tr>
                     </table>
 
-                    <div class="tav-preview-wrap">
-                        <button type="button" class="button button-secondary tav-preview-btn"
+                    <div class="tav-template-footer">
+                        <button type="button" class="tav-btn tav-preview-btn"
                             data-subject="tav_email_received_subject"
                             data-body="tav_email_received_body">
                             <?php esc_html_e('Preview Template', 'the-admin-vault'); ?>
+                        </button>
+                        <button type="submit" name="tav_settings_save" class="tav-btn tav-btn-primary">
+                            <?php esc_html_e('Save Changes', 'the-admin-vault'); ?>
                         </button>
                     </div>
 
                     <div class="tav-ph-box">
                         <h4><?php esc_html_e('Available Placeholders', 'the-admin-vault'); ?></h4>
                         <table>
-                            <tr><td><code>{client_name}</code></td><td><?php esc_html_e("Client's display name", 'the-admin-vault'); ?></td></tr>
-                            <tr><td><code>{project_name}</code></td><td><?php esc_html_e('Request / project title', 'the-admin-vault'); ?></td></tr>
-                            <tr><td><code>{package}</code></td><td><?php esc_html_e('Package tier (e.g. Custom Search)', 'the-admin-vault'); ?></td></tr>
-                            <tr><td><code>{delivery}</code></td><td><?php esc_html_e('Expected delivery timeframe', 'the-admin-vault'); ?></td></tr>
-                            <tr><td><code>{link}</code></td><td><?php esc_html_e('Link to the client dashboard', 'the-admin-vault'); ?></td></tr>
+                            <tr><td><code data-copy="{{client_name}}" title="Click to copy">{{client_name}}</code></td><td><?php esc_html_e("Client's display name", 'the-admin-vault'); ?></td></tr>
+                            <tr><td><code data-copy="{{project_name}}" title="Click to copy">{{project_name}}</code></td><td><?php esc_html_e('Request / project title', 'the-admin-vault'); ?></td></tr>
+                            <tr><td><code data-copy="{{request_id}}" title="Click to copy">{{request_id}}</code></td><td><?php esc_html_e('Numeric request ID', 'the-admin-vault'); ?></td></tr>
+                            <tr><td><code data-copy="{{package}}" title="Click to copy">{{package}}</code></td><td><?php esc_html_e('Package tier (e.g. Custom Search)', 'the-admin-vault'); ?></td></tr>
+                            <tr><td><code data-copy="{{delivery}}" title="Click to copy">{{delivery}}</code></td><td><?php esc_html_e('Expected delivery timeframe', 'the-admin-vault'); ?></td></tr>
+                            <tr><td><code data-copy="{{platform_url}}" title="Click to copy">{{platform_url}}</code></td><td><?php esc_html_e('Link to the client dashboard', 'the-admin-vault'); ?></td></tr>
                         </table>
                     </div>
                 </div><!-- /tab-received -->
@@ -206,30 +219,34 @@ $preview_reset_url   = site_url('/wp-login.php?action=rp');
 
                     <table class="form-table" role="presentation">
                         <tr>
-                            <th scope="row"><label for="tav_email_fulfill_subject"><?php esc_html_e('Subject', 'the-admin-vault'); ?></label></th>
+                            <th scope="row"><label for="tav_email_fulfill_subject"><?php esc_html_e('Subject Line', 'the-admin-vault'); ?></label></th>
                             <td><input name="tav_email_fulfill_subject" type="text" id="tav_email_fulfill_subject" value="<?php echo esc_attr($fulfill_subject); ?>" class="regular-text"></td>
                         </tr>
                         <tr>
-                            <th scope="row"><label for="tav_email_fulfill_body"><?php esc_html_e('Body', 'the-admin-vault'); ?></label></th>
+                            <th scope="row"><label for="tav_email_fulfill_body"><?php esc_html_e('Email Body', 'the-admin-vault'); ?></label><p class="tav-field-hint"><?php esc_html_e('Supports standard text, HTML, and basic Markdown for formatting.', 'the-admin-vault'); ?></p></th>
                             <td><textarea name="tav_email_fulfill_body" id="tav_email_fulfill_body" rows="9" cols="50" class="large-text code"><?php echo esc_textarea($fulfill_body); ?></textarea></td>
                         </tr>
                     </table>
 
-                    <div class="tav-preview-wrap">
-                        <button type="button" class="button button-secondary tav-preview-btn"
+                    <div class="tav-template-footer">
+                        <button type="button" class="tav-btn tav-preview-btn"
                             data-subject="tav_email_fulfill_subject"
                             data-body="tav_email_fulfill_body">
                             <?php esc_html_e('Preview Template', 'the-admin-vault'); ?>
+                        </button>
+                        <button type="submit" name="tav_settings_save" class="tav-btn tav-btn-primary">
+                            <?php esc_html_e('Save Changes', 'the-admin-vault'); ?>
                         </button>
                     </div>
 
                     <div class="tav-ph-box">
                         <h4><?php esc_html_e('Available Placeholders', 'the-admin-vault'); ?></h4>
                         <table>
-                            <tr><td><code>{client_name}</code></td><td><?php esc_html_e("Client's display name", 'the-admin-vault'); ?></td></tr>
-                            <tr><td><code>{project_name}</code></td><td><?php esc_html_e('Request / project title', 'the-admin-vault'); ?></td></tr>
-                            <tr><td><code>{storyteller_list}</code></td><td><?php esc_html_e('Names of assigned storytellers', 'the-admin-vault'); ?></td></tr>
-                            <tr><td><code>{link}</code></td><td><?php esc_html_e('Link to the review page', 'the-admin-vault'); ?></td></tr>
+                            <tr><td><code data-copy="{{client_name}}" title="Click to copy">{{client_name}}</code></td><td><?php esc_html_e("Client's display name", 'the-admin-vault'); ?></td></tr>
+                            <tr><td><code data-copy="{{project_name}}" title="Click to copy">{{project_name}}</code></td><td><?php esc_html_e('Request / project title', 'the-admin-vault'); ?></td></tr>
+                            <tr><td><code data-copy="{{request_id}}" title="Click to copy">{{request_id}}</code></td><td><?php esc_html_e('Numeric request ID', 'the-admin-vault'); ?></td></tr>
+                            <tr><td><code data-copy="{{storyteller_list}}" title="Click to copy">{{storyteller_list}}</code></td><td><?php esc_html_e('Names of assigned storytellers', 'the-admin-vault'); ?></td></tr>
+                            <tr><td><code data-copy="{{platform_url}}" title="Click to copy">{{platform_url}}</code></td><td><?php esc_html_e('Link to the review page', 'the-admin-vault'); ?></td></tr>
                         </table>
                     </div>
                 </div><!-- /tab-fulfill -->
@@ -242,32 +259,36 @@ $preview_reset_url   = site_url('/wp-login.php?action=rp');
 
                     <table class="form-table" role="presentation">
                         <tr>
-                            <th scope="row"><label for="tav_email_payment_subject"><?php esc_html_e('Subject', 'the-admin-vault'); ?></label></th>
+                            <th scope="row"><label for="tav_email_payment_subject"><?php esc_html_e('Subject Line', 'the-admin-vault'); ?></label></th>
                             <td><input name="tav_email_payment_subject" type="text" id="tav_email_payment_subject" value="<?php echo esc_attr($payment_subject); ?>" class="regular-text"></td>
                         </tr>
                         <tr>
-                            <th scope="row"><label for="tav_email_payment_body"><?php esc_html_e('Body', 'the-admin-vault'); ?></label></th>
+                            <th scope="row"><label for="tav_email_payment_body"><?php esc_html_e('Email Body', 'the-admin-vault'); ?></label><p class="tav-field-hint"><?php esc_html_e('Supports standard text, HTML, and basic Markdown for formatting.', 'the-admin-vault'); ?></p></th>
                             <td><textarea name="tav_email_payment_body" id="tav_email_payment_body" rows="9" cols="50" class="large-text code"><?php echo esc_textarea($payment_body); ?></textarea></td>
                         </tr>
                     </table>
 
-                    <div class="tav-preview-wrap">
-                        <button type="button" class="button button-secondary tav-preview-btn"
+                    <div class="tav-template-footer">
+                        <button type="button" class="tav-btn tav-preview-btn"
                             data-subject="tav_email_payment_subject"
                             data-body="tav_email_payment_body">
                             <?php esc_html_e('Preview Template', 'the-admin-vault'); ?>
+                        </button>
+                        <button type="submit" name="tav_settings_save" class="tav-btn tav-btn-primary">
+                            <?php esc_html_e('Save Changes', 'the-admin-vault'); ?>
                         </button>
                     </div>
 
                     <div class="tav-ph-box">
                         <h4><?php esc_html_e('Available Placeholders', 'the-admin-vault'); ?></h4>
                         <table>
-                            <tr><td><code>{client_name}</code></td><td><?php esc_html_e("Client's display name", 'the-admin-vault'); ?></td></tr>
-                            <tr><td><code>{project_name}</code></td><td><?php esc_html_e('Request / project title', 'the-admin-vault'); ?></td></tr>
-                            <tr><td><code>{package}</code></td><td><?php esc_html_e('Package tier (e.g. Custom Search)', 'the-admin-vault'); ?></td></tr>
-                            <tr><td><code>{total}</code></td><td><?php esc_html_e('Formatted order total (e.g. $600.00)', 'the-admin-vault'); ?></td></tr>
-                            <tr><td><code>{delivery}</code></td><td><?php esc_html_e('Expected delivery timeframe', 'the-admin-vault'); ?></td></tr>
-                            <tr><td><code>{link}</code></td><td><?php esc_html_e('Link to the client dashboard', 'the-admin-vault'); ?></td></tr>
+                            <tr><td><code data-copy="{{client_name}}" title="Click to copy">{{client_name}}</code></td><td><?php esc_html_e("Client's display name", 'the-admin-vault'); ?></td></tr>
+                            <tr><td><code data-copy="{{project_name}}" title="Click to copy">{{project_name}}</code></td><td><?php esc_html_e('Request / project title', 'the-admin-vault'); ?></td></tr>
+                            <tr><td><code data-copy="{{request_id}}" title="Click to copy">{{request_id}}</code></td><td><?php esc_html_e('Numeric request ID', 'the-admin-vault'); ?></td></tr>
+                            <tr><td><code data-copy="{{package}}" title="Click to copy">{{package}}</code></td><td><?php esc_html_e('Package tier (e.g. Custom Search)', 'the-admin-vault'); ?></td></tr>
+                            <tr><td><code data-copy="{{total_amount}}" title="Click to copy">{{total_amount}}</code></td><td><?php esc_html_e('Formatted order total (e.g. $600.00)', 'the-admin-vault'); ?></td></tr>
+                            <tr><td><code data-copy="{{delivery}}" title="Click to copy">{{delivery}}</code></td><td><?php esc_html_e('Expected delivery timeframe', 'the-admin-vault'); ?></td></tr>
+                            <tr><td><code data-copy="{{platform_url}}" title="Click to copy">{{platform_url}}</code></td><td><?php esc_html_e('Link to the client dashboard', 'the-admin-vault'); ?></td></tr>
                         </table>
                     </div>
                 </div><!-- /tab-payment -->
@@ -280,39 +301,37 @@ $preview_reset_url   = site_url('/wp-login.php?action=rp');
 
                     <table class="form-table" role="presentation">
                         <tr>
-                            <th scope="row"><label for="tav_email_reset_subject"><?php esc_html_e('Subject', 'the-admin-vault'); ?></label></th>
+                            <th scope="row"><label for="tav_email_reset_subject"><?php esc_html_e('Subject Line', 'the-admin-vault'); ?></label></th>
                             <td><input name="tav_email_reset_subject" type="text" id="tav_email_reset_subject" value="<?php echo esc_attr($reset_subject); ?>" class="regular-text"></td>
                         </tr>
                         <tr>
-                            <th scope="row"><label for="tav_email_reset_body"><?php esc_html_e('Body', 'the-admin-vault'); ?></label></th>
+                            <th scope="row"><label for="tav_email_reset_body"><?php esc_html_e('Email Body', 'the-admin-vault'); ?></label><p class="tav-field-hint"><?php esc_html_e('Supports standard text, HTML, and basic Markdown for formatting.', 'the-admin-vault'); ?></p></th>
                             <td><textarea name="tav_email_reset_body" id="tav_email_reset_body" rows="9" cols="50" class="large-text code"><?php echo esc_textarea($reset_body); ?></textarea></td>
                         </tr>
                     </table>
 
-                    <div class="tav-preview-wrap">
-                        <button type="button" class="button button-secondary tav-preview-btn"
+                    <div class="tav-template-footer">
+                        <button type="button" class="tav-btn tav-preview-btn"
                             data-subject="tav_email_reset_subject"
                             data-body="tav_email_reset_body">
                             <?php esc_html_e('Preview Template', 'the-admin-vault'); ?>
+                        </button>
+                        <button type="submit" name="tav_settings_save" class="tav-btn tav-btn-primary">
+                            <?php esc_html_e('Save Changes', 'the-admin-vault'); ?>
                         </button>
                     </div>
 
                     <div class="tav-ph-box">
                         <h4><?php esc_html_e('Available Placeholders', 'the-admin-vault'); ?></h4>
                         <table>
-                            <tr><td><code>{user_name}</code></td><td><?php esc_html_e("Recipient's display name", 'the-admin-vault'); ?></td></tr>
-                            <tr><td><code>{reset_link}</code></td><td><?php esc_html_e('One-time password reset URL', 'the-admin-vault'); ?></td></tr>
-                            <tr><td><code>{site_name}</code></td><td><?php esc_html_e('Site name from General Settings', 'the-admin-vault'); ?></td></tr>
+                            <tr><td><code data-copy="{{user_name}}" title="Click to copy">{{user_name}}</code></td><td><?php esc_html_e("Recipient's display name", 'the-admin-vault'); ?></td></tr>
+                            <tr><td><code data-copy="{{reset_link}}" title="Click to copy">{{reset_link}}</code></td><td><?php esc_html_e('One-time password reset URL', 'the-admin-vault'); ?></td></tr>
+                            <tr><td><code data-copy="{{site_name}}" title="Click to copy">{{site_name}}</code></td><td><?php esc_html_e('Site name from General Settings', 'the-admin-vault'); ?></td></tr>
                         </table>
                     </div>
                 </div><!-- /tab-reset -->
 
             </div><!-- /.tav-tabs-wrap -->
-
-            <p class="submit" style="margin-top: 24px;">
-                <input type="submit" name="submit" id="submit" class="button button-primary"
-                    value="<?php esc_attr_e('Save Changes', 'the-admin-vault'); ?>">
-            </p>
 
         </form><!-- /form -->
     </div><!-- /.tav-form-panel -->
@@ -327,7 +346,7 @@ $preview_reset_url   = site_url('/wp-login.php?action=rp');
         <table class="tav-preview-meta">
             <tr>
                 <td><?php esc_html_e('From:', 'the-admin-vault'); ?></td>
-                <td><?php echo esc_html($preview_admin_email); ?></td>
+                <td>Verified Storytellers &lt;noreply@verifiedstorytellers.com&gt;</td>
             </tr>
             <tr>
                 <td><?php esc_html_e('To:', 'the-admin-vault'); ?></td>
@@ -340,6 +359,9 @@ $preview_reset_url   = site_url('/wp-login.php?action=rp');
         </table>
 
         <hr class="tav-preview-hr">
+        <p style="font-size:11px; color:#999; margin:8px 0 4px; font-family:monospace;">
+            --- Mock Email Body Content ---
+        </p>
         <div id="tav-preview-body"></div>
 
         <p style="margin:20px 0 0; font-size:12px; color:#94a3b8; font-style:italic;">
@@ -356,16 +378,17 @@ $preview_reset_url   = site_url('/wp-login.php?action=rp');
        Values are server-resolved where they depend on site config,
        then hard-coded sample data for the remainder.              */
     var PREVIEW_DATA = {
-        '{client_name}':      'Jane Smith',
-        '{user_name}':        'Jane Smith',
-        '{project_name}':     'Sample Campaign',
-        '{package}':          'Custom Search',
-        '{total}':            '$600',
-        '{delivery}':         'June 3, 2026',
-        '{link}':             <?php echo wp_json_encode($preview_dashboard); ?>,
-        '{reset_link}':       <?php echo wp_json_encode($preview_reset_url); ?>,
-        '{site_name}':        <?php echo wp_json_encode($preview_site_name); ?>,
-        '{storyteller_list}': 'Sarah Miller, David Chen, Elena Kovac',
+        '{{client_name}}':      'Jane Smith',
+        '{{user_name}}':        'Jane Smith',
+        '{{project_name}}':     'Sample Campaign',
+        '{{request_id}}':       'REQ-12345',
+        '{{package}}':          'Custom Search',
+        '{{total_amount}}':     '$600.00',
+        '{{delivery}}':         'June 3, 2026',
+        '{{platform_url}}':     <?php echo wp_json_encode($preview_dashboard); ?>,
+        '{{reset_link}}':       <?php echo wp_json_encode($preview_reset_url); ?>,
+        '{{site_name}}':        <?php echo wp_json_encode($preview_site_name); ?>,
+        '{{storyteller_list}}': 'Sarah Miller, David Chen, Elena Kovac',
     };
 
     /* ── Placeholder substitution ─────────────────────────────── */
@@ -387,6 +410,12 @@ $preview_reset_url   = site_url('/wp-login.php?action=rp');
 
         var renderedSubject = applySubstitutions(rawSubject);
         var renderedBody    = applySubstitutions(rawBody);
+
+        // Update modal title from the currently active tab label.
+        var activeTab = document.querySelector('.tav-tab-btn.tav-active');
+        var tabLabel  = (activeTab && activeTab.textContent.trim()) || 'Template';
+        document.querySelector('#tav-preview-modal .tav-preview-title').textContent =
+            tabLabel + ' Preview';
 
         document.getElementById('tav-preview-subject').textContent = renderedSubject;
 
@@ -444,6 +473,17 @@ $preview_reset_url   = site_url('/wp-login.php?action=rp');
             btn.classList.add('tav-active');
             btn.setAttribute('aria-selected', 'true');
             document.getElementById(btn.dataset.tab).classList.add('tav-active');
+        });
+    });
+
+    /* ── Click-to-copy placeholder chips ──────────────────────── */
+    document.querySelectorAll('.tav-ph-box code[data-copy]').forEach(function (chip) {
+        chip.addEventListener('click', function () {
+            if (!navigator.clipboard) return;
+            navigator.clipboard.writeText(chip.dataset.copy).then(function () {
+                chip.style.background = '#d4edda';
+                setTimeout(function () { chip.style.background = ''; }, 800);
+            });
         });
     });
 }());

@@ -539,6 +539,12 @@
     color: #b91c1c;
 }
 
+/* ── Client status badges (Clients table) ───────────────────── */
+.tav-status-active    { background:#d4edda; color:#155724; }
+.tav-status-suspended { background:#f8d7da; color:#721c24; }
+.tav-status-vip       { background:#d1ecf1; color:#0c5460; }
+.tav-status-standard  { background:#e2e3e5; color:#383d41; }
+
 /* ── Status Pills (Requests) ────────────────────────────────── */
 .tav-pill {
     display: inline-block;
@@ -1715,3 +1721,47 @@
     color: var(--tav-text-muted);
     margin: 0 0 10px;
 }
+
+.tav-eng-high { background: #d4edda; color: #155724; border-radius: 12px; padding: 2px 8px; font-size: 12px; font-weight: 600; }
+.tav-eng-mid  { background: #fff3cd; color: #856404; border-radius: 12px; padding: 2px 8px; font-size: 12px; font-weight: 600; }
+.tav-eng-low  { background: #f8d7da; color: #721c24; border-radius: 12px; padding: 2px 8px; font-size: 12px; font-weight: 600; }
+
+.tav-selection-counter { margin-bottom: 12px; font-size: 14px; font-weight: 600; color: #666; }
+.tav-selection-counter.tav-counter-met { color: #155724; }
+.tav-counter-target { font-weight: 400; color: #999; }
+
+.tav-fulfillment-center .tav-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.tav-panel-link { font-size: 13px; color: #269EB2; text-decoration: none; }
+.tav-mini-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tav-mini-table th { text-align: left; padding: 6px 8px; border-bottom: 2px solid #e5e5e5; color: #666; font-weight: 600; }
+.tav-mini-table td { padding: 8px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+.tav-mini-table tbody tr:hover { background: #f9fafb; }
+.tav-mini-title { font-weight: 500; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tav-btn-sm { padding: 4px 10px; font-size: 12px; border-radius: 4px; text-decoration: none; }
+.tav-empty-state { color: #999; font-style: italic; font-size: 13px; padding: 12px 0; }
+
+.tav-brief-row {
+    display: flex;
+    gap: 12px;
+    align-items: baseline;
+    padding: 8px 0;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 13px;
+}
+.tav-brief-row:last-of-type { border-bottom: none; }
+.tav-brief-label {
+    flex: 0 0 130px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--tav-text-muted, #64748b);
+}
+.tav-brief-value {
+    flex: 1;
+    color: #1f2937;
+    line-height: 1.5;
+    word-break: break-word;
+}
+.tav-brief-value p:first-child { margin-top: 0; }
+.tav-brief-value p:last-child { margin-bottom: 0; }

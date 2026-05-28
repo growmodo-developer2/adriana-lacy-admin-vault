@@ -35,6 +35,7 @@ $search_query = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
                 <th><?php esc_html_e('ORGANIZATION', 'the-admin-vault'); ?></th>
                 <th><?php esc_html_e('REQUESTS', 'the-admin-vault'); ?></th>
                 <th><?php esc_html_e('TOTAL SPENT', 'the-admin-vault'); ?></th>
+                <th><?php esc_html_e('STATUS', 'the-admin-vault'); ?></th>
                 <th><?php esc_html_e('JOINED', 'the-admin-vault'); ?></th>
                 <th class="actions"><?php esc_html_e('ACTIONS', 'the-admin-vault'); ?></th>
             </tr>
@@ -125,14 +126,26 @@ $search_query = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
                                 <?php echo $total_spent > 0 ? '$' . esc_html(number_format($total_spent)) : '—'; ?>
                             </span>
                         </td>
+                        <?php
+                        $client_status  = get_user_meta($client_id, 'ccc_client_status', true) ?: 'active';
+                        $status_labels  = ['active' => 'Active', 'suspended' => 'Suspended', 'vip' => 'VIP', 'standard' => 'Standard'];
+                        $status_classes = ['active' => 'tav-status-active', 'suspended' => 'tav-status-suspended', 'vip' => 'tav-status-vip', 'standard' => 'tav-status-standard'];
+                        $status_label   = $status_labels[$client_status] ?? ucfirst($client_status);
+                        $status_class   = $status_classes[$client_status] ?? 'tav-status-default';
+                        ?>
+                        <td>
+                            <span class="tav-pill <?php echo esc_attr($status_class); ?>">
+                                • <?php echo esc_html($status_label); ?>
+                            </span>
+                        </td>
                         <td><span class="tav-cell-secondary"><?php echo esc_html($registered); ?></span></td>
                         <td class="actions">
                             <div class="tav-actions-wrap">
                                 <button type="button"
-                                        class="tav-btn-icon tav-view-client"
+                                        class="tav-btn tav-btn-primary tav-view-client"
                                         data-client-id="<?php echo esc_attr($client_id); ?>"
-                                        title="<?php esc_attr_e('View Detail', 'the-admin-vault'); ?>">
-                                    <span class="dashicons dashicons-visibility"></span>
+                                        style="min-width:100px;">
+                                    <?php esc_html_e('View Detail', 'the-admin-vault'); ?>
                                 </button>
                             </div>
                         </td>
@@ -142,7 +155,7 @@ $search_query = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
             else:
             ?>
                 <tr>
-                    <td colspan="6" class="tav-empty"><?php esc_html_e('No clients found.', 'the-admin-vault'); ?></td>
+                    <td colspan="7" class="tav-empty"><?php esc_html_e('No clients found.', 'the-admin-vault'); ?></td>
                 </tr>
             <?php endif; ?>
         </tbody>

@@ -452,6 +452,43 @@ function tav_register_acf_fields(): void
                 'instructions' => __('Internal notes regarding verification.', 'the-admin-vault'),
                 'wrapper' => ['width' => '100'],
             ],
+
+            /* ── Organization Tags (Text) ─────────────── */
+            [
+                'key'          => 'field_tav_org_tags',
+                'name'         => 'organization_tags',
+                'label'        => __('Organization Tags', 'the-admin-vault'),
+                'type'         => 'text',
+                'instructions' => __('Comma-separated tags for internal organization (e.g. "climate-focus, high-priority")', 'the-admin-vault'),
+                'placeholder'  => __('e.g. climate-focus, high-priority', 'the-admin-vault'),
+                'parent'       => 'group_tav_storyteller',
+                'wrapper'      => ['width' => '50'],
+            ],
+
+            /* ── Date Added (Date Picker) ─────────────── */
+            [
+                'key'            => 'field_tav_date_added',
+                'name'           => 'date_added',
+                'label'          => __('Date Added', 'the-admin-vault'),
+                'type'           => 'date_picker',
+                'display_format' => 'F j, Y',
+                'return_format'  => 'Y-m-d',
+                'first_day'      => 1,
+                'parent'         => 'group_tav_storyteller',
+                'wrapper'        => ['width' => '25'],
+            ],
+
+            /* ── Mark as Verified (True/False) ────────── */
+            [
+                'key'           => 'field_tav_is_verified',
+                'name'          => 'is_verified',
+                'label'         => __('Mark as verified (vetting complete)', 'the-admin-vault'),
+                'type'          => 'true_false',
+                'ui'            => 1,
+                'default_value' => 0,
+                'parent'        => 'group_tav_storyteller',
+                'wrapper'       => ['width' => '25'],
+            ],
         ],
 
         /* ── Location rule: only on Storyteller CPT ──── */
@@ -955,6 +992,15 @@ function tav_persist_avg_engagement_rate($post_id): void
     $avg = !empty($rates) ? round(array_sum($rates) / count($rates), 2) : 0.0;
 
     update_post_meta($post_id, 'tav_avg_engagement_rate', $avg);
+
+    // Sync the is_verified toggle to campaign_status: checking the box
+    // promotes the storyteller to 'verified' without forcing the admin
+    // to also change the select. campaign_status remains the source of
+    // truth — this just makes the checkbox a convenient shortcut.
+    $is_verified = get_field('is_verified', $post_id);
+    if ($is_verified) {
+        update_field('campaign_status', 'verified', $post_id);
+    }
 }
 
 /*--------------------------------------------------------------
@@ -998,4 +1044,44 @@ function tav_backfill_engagement_rates(): void
     }
 
     update_option('tav_engagement_backfill_done', true);
+}
+
+/*--------------------------------------------------------------
+ * 15. Custom password reset email
+ *
+ *  Overrides the default WordPress reset email with the admin-
+ *  editable template stored in tav_email_reset_subject /
+ *  tav_email_reset_body. If either option is empty, the default
+ *  WordPress behavior is preserved.
+ *------------------------------------------------------------*/
+add_filter('retrieve_password_title', 'tav_custom_password_reset_subject', 10, 3);
+add_filter('retrieve_password_message', 'tav_custom_password_reset_email', 10, 4);
+
+function tav_custom_password_reset_subject($title, $user_login, $user_data)
+{
+    $subject = get_option('tav_email_reset_subject', '');
+    if (empty($subject)) {
+        return $title;
+    }
+    $replacements = [
+        '{{user_name}}'  => $user_data->display_name ?: $user_login,
+        '{{site_name}}'  => get_bloginfo('name'),
+        '{{reset_link}}' => '',
+    ];
+    return str_replace(array_keys($replacements), array_values($replacements), $subject);
+}
+
+function tav_custom_password_reset_email($message, $key, $user_login, $user_data)
+{
+    $body = get_option('tav_email_reset_body', '');
+    if (empty($body)) {
+        return $message;
+    }
+    $reset_link = network_site_url("wp-login.php?action=rp&key=$key&login=" . rawurlencode($user_login), 'login');
+    $replacements = [
+        '{{user_name}}'  => $user_data->display_name ?: $user_login,
+        '{{reset_link}}' => $reset_link,
+        '{{site_name}}'  => get_bloginfo('name'),
+    ];
+    return str_replace(array_keys($replacements), array_values($replacements), $body);
 }

@@ -177,6 +177,11 @@ jQuery(document).ready(function ($) {
                 var d = response.data;
                 var initials = tavInitials(d.name);
 
+                // Update modal title with company name (falls back to display name).
+                var company = d.company || d.name || 'Client';
+                document.querySelector('#tav-client-modal .tav-modal-title').textContent =
+                    company + ' Account Details';
+
                 // Status <select> options.
                 var statusOptions = [
                     { value: 'active',    label: 'Active' },

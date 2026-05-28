@@ -95,7 +95,7 @@ function tav_dashboard_on_load(): void
                 if ($client_user) {
                     $to = $client_user->user_email;
                     $subject_tmpl = get_option('tav_email_fulfill_subject', 'Your storytellers are ready!');
-                    $body_tmpl = get_option('tav_email_fulfill_body', "Hi {client_name},\n\nWe have found some great storytellers for your project {project_name}.\n\nLog in to view them here: {link}\n\nBest,\nThe Team");
+                    $body_tmpl = get_option('tav_email_fulfill_body', "Hi {{client_name}},\n\nWe have found some great storytellers for your project {{project_name}}.\n\nLog in to view them here: {{platform_url}}\n\nBest,\nThe Team");
                     
                     $st_list_text = "";
                     foreach ($selected_storytellers as $st_id) {
@@ -112,10 +112,11 @@ function tav_dashboard_on_load(): void
                         : add_query_arg('request_id', $req_id, site_url('/client-dashboard/'));
 
                     $replacements = [
-                        '{client_name}'      => $client_user->display_name,
-                        '{project_name}'     => get_the_title($req_id),
-                        '{storyteller_list}' => $st_list_text,
-                        '{link}'             => $review_url,
+                        '{{client_name}}'      => $client_user->display_name,
+                        '{{project_name}}'     => get_the_title($req_id),
+                        '{{request_id}}'       => (string) $req_id,
+                        '{{storyteller_list}}' => $st_list_text,
+                        '{{platform_url}}'     => $review_url,
                     ];
                     
                     $subject = str_replace(array_keys($replacements), array_values($replacements), $subject_tmpl);
@@ -441,6 +442,37 @@ function tav_get_recent_requests(int $count = 5): array
         'orderby' => 'date',
         'order' => 'DESC',
     ]);
+}
+
+/**
+ * Pending fulfillment requests — paid/in_vetting/matching, oldest first.
+ */
+function tav_get_pending_fulfillment_requests(int $limit = 5): array
+{
+    $posts = get_posts([
+        'post_type'      => 'request',
+        'post_status'    => 'publish',
+        'posts_per_page' => $limit,
+        'orderby'        => 'date',
+        'order'          => 'ASC',
+        'meta_query'     => [[
+            'key'     => 'status',
+            'value'   => ['paid', 'in_vetting', 'matching'],
+            'compare' => 'IN',
+        ]],
+    ]);
+
+    $out = [];
+    foreach ($posts as $p) {
+        $out[] = [
+            'id'       => $p->ID,
+            'title'    => $p->post_title,
+            'status'   => get_post_meta($p->ID, 'status', true),
+            'due_date' => get_post_meta($p->ID, 'due_date', true),
+            'client'   => get_the_author_meta('display_name', (int) $p->post_author) ?: __('Unknown', 'the-admin-vault'),
+        ];
+    }
+    return $out;
 }
 
 /**
