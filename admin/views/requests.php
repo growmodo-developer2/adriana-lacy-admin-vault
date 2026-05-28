@@ -60,7 +60,11 @@ if (isset($_GET['error']) && $_GET['error'] === 'not_paid') {
 </div>
 
 <?php
-$status_filter = isset($_GET['status_filter']) ? sanitize_text_field($_GET['status_filter']) : '';
+$status_filter  = isset($_GET['status_filter']) ? sanitize_text_field($_GET['status_filter']) : '';
+$date_from      = sanitize_text_field($_GET['date_from'] ?? '');
+$date_to        = sanitize_text_field($_GET['date_to']   ?? '');
+$selected_client = (int)($_GET['client_id'] ?? 0);
+$selected_niche  = sanitize_text_field($_GET['niche'] ?? '');
 $filter_statuses = [
     ''                => __('All Statuses', 'the-admin-vault'),
     'pending_payment' => __('Payment Pending', 'the-admin-vault'),
@@ -73,19 +77,49 @@ $filter_statuses = [
 ];
 ?>
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
-    <form method="GET" style="display:flex; gap:8px; align-items:center; margin:0;">
+    <form method="GET" style="display:flex; gap:8px; align-items:center; margin:0; flex-wrap:wrap;">
         <input type="hidden" name="page" value="<?php echo esc_attr($current_page_slug); ?>">
         <input type="hidden" name="view" value="requests">
-        <?php if ($client_filter ?? 0): ?>
-            <input type="hidden" name="client_id" value="<?php echo esc_attr($client_filter); ?>">
-        <?php endif; ?>
         <select name="status_filter" style="padding:6px 10px; border-radius:4px; border:1px solid #ccc;">
             <?php foreach ($filter_statuses as $val => $label): ?>
                 <option value="<?php echo esc_attr($val); ?>" <?php selected($status_filter, $val); ?>><?php echo esc_html($label); ?></option>
             <?php endforeach; ?>
         </select>
+        <?php
+        $client_users = get_users([
+            'role__in'   => ['um_client', 'client'],
+            'orderby'    => 'display_name',
+            'order'      => 'ASC',
+            'fields'     => ['ID', 'display_name'],
+        ]);
+        ?>
+        <select name="client_id" style="padding:6px 10px; border-radius:4px; border:1px solid #ccc; min-width:140px;">
+            <option value=""><?php esc_html_e('All Clients', 'the-admin-vault'); ?></option>
+            <?php foreach ($client_users as $u): ?>
+                <option value="<?php echo (int)$u->ID; ?>" <?php selected($selected_client, $u->ID); ?>>
+                    <?php echo esc_html($u->display_name); ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+        <?php $niches = tav_get_niches(); ?>
+        <select name="niche" style="padding:6px 10px; border-radius:4px; border:1px solid #ccc; min-width:120px;">
+            <option value=""><?php esc_html_e('All Niches', 'the-admin-vault'); ?></option>
+            <?php foreach ($niches as $niche_slug => $niche_name): ?>
+                <option value="<?php echo esc_attr($niche_slug); ?>" <?php selected($selected_niche, $niche_slug); ?>>
+                    <?php echo esc_html($niche_name); ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+        <label for="date_from" style="font-size:13px;"><?php esc_html_e('From', 'the-admin-vault'); ?></label>
+        <input type="date" id="date_from" name="date_from"
+            value="<?php echo esc_attr($date_from); ?>"
+            style="padding:6px 8px; border:1px solid #ddd; border-radius:4px; font-size:13px;">
+        <label for="date_to" style="font-size:13px;"><?php esc_html_e('To', 'the-admin-vault'); ?></label>
+        <input type="date" id="date_to" name="date_to"
+            value="<?php echo esc_attr($date_to); ?>"
+            style="padding:6px 8px; border:1px solid #ddd; border-radius:4px; font-size:13px;">
         <button type="submit" class="button button-secondary"><?php esc_html_e('Filter', 'the-admin-vault'); ?></button>
-        <?php if ($status_filter): ?>
+        <?php if ($status_filter || $selected_client || $selected_niche || $date_from || $date_to): ?>
             <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=requests')); ?>" class="button"><?php esc_html_e('Clear', 'the-admin-vault'); ?></a>
         <?php endif; ?>
     </form>
@@ -133,8 +167,10 @@ $filter_statuses = [
                 'order' => 'DESC',
             ];
 
-            if ($client_filter) {
-                $query_args['author'] = $client_filter;
+            // Client filter (from dropdown; also accepts legacy URL param from clients view)
+            $active_client = $selected_client ?: $client_filter;
+            if ($active_client) {
+                $query_args['author'] = $active_client;
             }
 
             // Status filter
@@ -146,13 +182,21 @@ $filter_statuses = [
                 ];
             }
 
-            $niche_filter = isset($_GET['niche']) ? sanitize_text_field($_GET['niche']) : '';
-            if ($niche_filter) {
+            // Niche filter
+            if ($selected_niche) {
                 $query_args['tax_query'][] = [
                     'taxonomy' => 'vs_niche',
                     'field'    => 'slug',
-                    'terms'    => $niche_filter,
+                    'terms'    => $selected_niche,
                 ];
+            }
+
+            // Date range filter
+            if ($date_from || $date_to) {
+                $date_query = ['inclusive' => true];
+                if ($date_from) $date_query['after']  = $date_from . ' 00:00:00';
+                if ($date_to)   $date_query['before'] = $date_to   . ' 23:59:59';
+                $query_args['date_query'] = [$date_query];
             }
 
 
@@ -262,8 +306,13 @@ $filter_statuses = [
                         <td><span class="tav-pill"><?php echo esc_html($status_label); ?></span></td>
                         <td><span class="tav-cell-secondary"><?php echo esc_html($niche_display); ?></span></td>
                         <td>
+                            <?php
+                                $due_date = get_post_meta($req_id, 'due_date', true);
+                                $due_display = !empty($due_date) ? date_i18n('M j, Y', strtotime($due_date)) : '—';
+                            ?>
                             <div style="font-size:13px;">
                                 <div><strong>Submitted:</strong> <?php echo esc_html($date_submitted); ?></div>
+                                <div><strong>Due:</strong> <?php echo esc_html($due_display); ?></div>
                             </div>
                         </td>
                         <td><span class="tav-cell-primary" style="font-size: 13px; line-height: 1.4; display: block; max-width: 200px;"><?php echo $selection_display; ?></span></td>
@@ -289,10 +338,16 @@ $filter_statuses = [
                                 <?php endif; ?>
                                 <?php if ($status === 'assigned'): ?>
                                     <button type="button"
+                                            class="tav-btn tav-btn-primary tav-open-request-modal"
+                                            data-modal="tav-req-modal-<?php echo esc_attr($req_id); ?>"
+                                            style="white-space:nowrap; border:none; cursor:pointer; padding:6px 12px; border-radius:6px; font-size:12px; font-weight:600;">
+                                        <?php esc_html_e('View Match', 'the-admin-vault'); ?>
+                                    </button>
+                                    <button type="button"
                                             class="tav-btn-icon tav-open-request-modal"
                                             data-modal="tav-req-modal-<?php echo esc_attr($req_id); ?>"
-                                            title="<?php esc_attr_e('View Details', 'the-admin-vault'); ?>"
-                                            aria-label="<?php esc_attr_e('View Details', 'the-admin-vault'); ?>">
+                                            title="<?php esc_attr_e('View Brief', 'the-admin-vault'); ?>"
+                                            aria-label="<?php esc_attr_e('View Brief', 'the-admin-vault'); ?>">
                                         <span class="dashicons dashicons-visibility"></span>
                                     </button>
                                     <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?page=' . $current_page_slug . '&view=requests&tav_set_complete=' . $req_id), 'tav_complete_' . $req_id)); ?>"
@@ -302,6 +357,19 @@ $filter_statuses = [
                                        onclick="return confirm('<?php esc_attr_e('Mark this request as completed?', 'the-admin-vault'); ?>');">
                                         <span class="dashicons dashicons-yes-alt"></span>
                                     </a>
+                                <?php endif; ?>
+                                <?php if ($status === 'completed'): ?>
+                                    <button type="button"
+                                            class="tav-btn-icon tav-open-request-modal"
+                                            data-modal="tav-brief-modal-<?php echo esc_attr($req_id); ?>"
+                                            title="<?php esc_attr_e('View Details', 'the-admin-vault'); ?>"
+                                            aria-label="<?php esc_attr_e('View Details', 'the-admin-vault'); ?>">
+                                        <span class="dashicons dashicons-visibility"></span>
+                                        <span><?php esc_html_e('View Details', 'the-admin-vault'); ?></span>
+                                    </button>
+                                <?php endif; ?>
+                                <?php if ($status === 'archived'): ?>
+                                    <span class="tav-cell-secondary"><?php esc_html_e('Archived', 'the-admin-vault'); ?></span>
                                 <?php endif; ?>
                             </div>
                         </td>
@@ -344,8 +412,11 @@ if ($req_query->have_posts()) :
 
         $brief_status = get_post_meta($brief_req_id, 'status', true);
         $brief_client_selected = get_field('client_selected_storytellers', $brief_req_id) ?: get_post_meta($brief_req_id, 'client_selected_storytellers', true);
-        if (!empty($brief_client_selected)) continue;
-        if (!in_array($brief_status, ['pending_payment', 'in_vetting', 'matching', 'ready_review', 'paid'], true)) continue;
+        // Completed rows always get a brief modal so admins can review what was delivered.
+        // For other allowed statuses, skip rows where the client has already picked
+        // (those open the "assigned" details modal instead).
+        if ($brief_status !== 'completed' && !empty($brief_client_selected)) continue;
+        if (!in_array($brief_status, ['pending_payment', 'in_vetting', 'matching', 'ready_review', 'paid', 'completed'], true)) continue;
 
         $b_author_id    = (int) get_post_field('post_author', $brief_req_id);
         $b_client_name  = get_the_author_meta('display_name', $b_author_id) ?: 'Unknown';
@@ -376,7 +447,7 @@ if ($req_query->have_posts()) :
 
         $b_status_labels = [
             'pending_payment' => 'Payment Pending', 'paid' => 'Paid', 'in_vetting' => 'In Vetting',
-            'matching' => 'Matching', 'ready_review' => 'Ready to Review',
+            'matching' => 'Matching', 'ready_review' => 'Ready to Review', 'completed' => 'Completed',
         ];
         $b_status_label = $b_status_labels[$brief_status] ?? ucwords(str_replace('_', ' ', $brief_status));
         ?>
