@@ -12,7 +12,13 @@ if (!$request || $request->post_type !== 'request') {
 
 
 // Get current selection
-$assigned_ids = get_post_meta($req_id, 'assigned_storyteller', true) ?: (get_post_meta($req_id, 'assigned_storytellers', true) ?: []);
+$assigned_ids = get_post_meta($req_id, 'storytellers', true);
+if (empty($assigned_ids)) {
+    $assigned_ids = get_post_meta($req_id, 'assigned_storytellers', true);
+}
+if (empty($assigned_ids)) {
+    $assigned_ids = get_post_meta($req_id, 'assigned_storyteller', true);
+}
 $assigned_ids = is_array($assigned_ids) ? array_map('intval', $assigned_ids) : [];
 
 
@@ -25,6 +31,22 @@ $brief = $request->post_content;
 $tier = get_field('package_tier', $req_id);
 $req_count = get_post_meta($req_id, 'storyteller_count', true);
 $additional_info = get_post_meta($req_id, 'additional_information', true);
+$campaign_goal = get_field('campaign_goal', $req_id);
+$req_location  = get_field('location', $req_id);
+$req_timeline  = get_field('timeline', $req_id);
+$req_addons    = get_field('addons', $req_id);
+
+$addon_labels = [
+    'rush'     => __('Rush Delivery', 'the-admin-vault'),
+    'extra'    => __('Extra Matches', 'the-admin-vault'),
+    'strategy' => __('Strategy Call', 'the-admin-vault'),
+];
+$addon_display = '';
+if (is_array($req_addons) && !empty($req_addons)) {
+    $addon_display = implode(', ', array_map(fn($a) => $addon_labels[$a] ?? ucfirst((string)$a), $req_addons));
+} elseif (is_string($req_addons) && $req_addons !== '') {
+    $addon_display = $addon_labels[$req_addons] ?? ucfirst($req_addons);
+}
 
 // Niche: Fetch from taxonomy
 $request_niches = wp_get_post_terms($req_id, 'vs_niche', ['fields' => 'names']);
@@ -77,29 +99,8 @@ if ($location_filter) {
         'compare' => 'LIKE',
     ];
 }
-if ($platform_filter) {
-    $meta_queries[] = [
-        'key'     => 'platforms_repeater_%_platform_name',
-        'value'   => $platform_filter,
-        'compare' => 'LIKE',
-    ];
-}
-if ($followers_filter) {
-    $ranges = [
-        'under_10k'   => [0, 10000],
-        '10k_50k'     => [10000, 50000],
-        '50k_100k'    => [50000, 100000],
-        '100k_plus'   => [100000, 99999999],
-    ];
-    if (isset($ranges[$followers_filter])) {
-        $meta_queries[] = [
-            'key'     => 'platforms_repeater_%_follower_count',
-            'value'   => $ranges[$followers_filter],
-            'type'    => 'NUMERIC',
-            'compare' => 'BETWEEN',
-        ];
-    }
-}
+// Platform filter removed — ACF repeater sub-fields not queryable via WP_Meta_Query. Implement in Phase 2 via flat meta on save.
+// Followers filter removed — same reason as platform filter; relies on platforms_repeater sub-fields.
 if ($engagement_filter) {
     $eng_ranges = [
         'under_2'   => [0, 2],
@@ -143,10 +144,56 @@ $storytellers = get_posts($args);
     <div class="tav-panel" style="align-self: start;">
         <div class="tav-panel-header"><h2 class="tav-panel-title"><?php esc_html_e('Client Brief', 'the-admin-vault'); ?></h2></div>
         <div class="tav-brief-content" style="padding: 20px;">
-            <p><strong><?php esc_html_e('Client', 'the-admin-vault'); ?>:</strong> <?php echo esc_html($client_name); ?></p>
-            <p><strong><?php esc_html_e('Niche', 'the-admin-vault'); ?>:</strong> <?php echo esc_html(is_array($niche_req) ? implode(', ', $niche_req) : $niche_req); ?></p>
-            <p><strong><?php esc_html_e('Package Tier', 'the-admin-vault'); ?>:</strong> <?php echo esc_html($tier ? ucfirst($tier) : '—'); ?></p>
-            <p><strong><?php esc_html_e('Requested Count', 'the-admin-vault'); ?>:</strong> <?php echo esc_html($req_count ?: '—'); ?></p>
+            <div class="tav-brief-row">
+                <span class="tav-brief-label"><?php esc_html_e('Client', 'the-admin-vault'); ?></span>
+                <span class="tav-brief-value"><?php echo esc_html($client_name); ?></span>
+            </div>
+            <div class="tav-brief-row">
+                <span class="tav-brief-label"><?php esc_html_e('Niche', 'the-admin-vault'); ?></span>
+                <span class="tav-brief-value"><?php echo esc_html(is_array($niche_req) ? implode(', ', $niche_req) : $niche_req); ?></span>
+            </div>
+            <div class="tav-brief-row">
+                <span class="tav-brief-label"><?php esc_html_e('Package Tier', 'the-admin-vault'); ?></span>
+                <span class="tav-brief-value"><?php echo esc_html($tier ? ucfirst($tier) : '—'); ?></span>
+            </div>
+            <div class="tav-brief-row">
+                <span class="tav-brief-label"><?php esc_html_e('Requested Count', 'the-admin-vault'); ?></span>
+                <span class="tav-brief-value"><?php echo esc_html($req_count ?: '—'); ?></span>
+            </div>
+            <?php if ($req_location): ?>
+                <div class="tav-brief-row">
+                    <span class="tav-brief-label"><?php esc_html_e('Location', 'the-admin-vault'); ?></span>
+                    <span class="tav-brief-value"><?php echo esc_html($req_location); ?></span>
+                </div>
+            <?php endif; ?>
+            <?php if ($req_timeline): ?>
+                <div class="tav-brief-row">
+                    <span class="tav-brief-label"><?php esc_html_e('Timeline', 'the-admin-vault'); ?></span>
+                    <span class="tav-brief-value"><?php echo esc_html(ucwords(str_replace('_', ' ', $req_timeline))); ?></span>
+                </div>
+            <?php endif; ?>
+            <?php if ($addon_display): ?>
+                <div class="tav-brief-row">
+                    <span class="tav-brief-label"><?php esc_html_e('Add-ons', 'the-admin-vault'); ?></span>
+                    <span class="tav-brief-value"><?php echo esc_html($addon_display); ?></span>
+                </div>
+            <?php endif; ?>
+            <?php if ($campaign_goal): ?>
+                <div class="tav-brief-row">
+                    <span class="tav-brief-label"><?php esc_html_e('Campaign Goal', 'the-admin-vault'); ?></span>
+                    <span class="tav-brief-value"><?php echo wp_kses_post($campaign_goal); ?></span>
+                </div>
+            <?php endif; ?>
+            <?php
+            $due_date_raw     = get_post_meta($request->ID, 'due_date', true);
+            $due_date_display = $due_date_raw
+                ? date_i18n('F j, Y', strtotime($due_date_raw))
+                : '—';
+            ?>
+            <div class="tav-brief-row">
+                <span class="tav-brief-label"><?php esc_html_e('Match Deadline', 'the-admin-vault'); ?></span>
+                <span class="tav-brief-value"><?php echo esc_html($due_date_display); ?></span>
+            </div>
             <hr>
             <h4><?php esc_html_e('Additional Info', 'the-admin-vault'); ?></h4>
             <div class="tav-brief-text" style="font-size: 13px; color: #666; margin-bottom: 20px;">
@@ -184,22 +231,28 @@ $storytellers = get_posts($args);
                     <?php endforeach; ?>
                 </select>
 
-                <select name="s_platform" style="padding:8px;">
-                    <option value=""><?php esc_html_e('All Platforms', 'the-admin-vault'); ?></option>
-                    <?php
-                    $platforms = ['instagram' => 'Instagram', 'tiktok' => 'TikTok', 'youtube' => 'YouTube', 'twitter' => 'X / Twitter', 'facebook' => 'Facebook', 'linkedin' => 'LinkedIn'];
-                    foreach ($platforms as $pk => $pl): ?>
-                        <option value="<?php echo esc_attr($pk); ?>" <?php selected($platform_filter, $pk); ?>><?php echo esc_html($pl); ?></option>
-                    <?php endforeach; ?>
-                </select>
+                <div style="display:flex; flex-direction:column;">
+                    <select name="s_platform" style="padding:8px;">
+                        <option value=""><?php esc_html_e('All Platforms', 'the-admin-vault'); ?></option>
+                        <?php
+                        $platforms = ['instagram' => 'Instagram', 'tiktok' => 'TikTok', 'youtube' => 'YouTube', 'twitter' => 'X / Twitter', 'facebook' => 'Facebook', 'linkedin' => 'LinkedIn'];
+                        foreach ($platforms as $pk => $pl): ?>
+                            <option value="<?php echo esc_attr($pk); ?>" <?php selected($platform_filter, $pk); ?>><?php echo esc_html($pl); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <small style="color:#888; font-style:italic;"><?php esc_html_e('Platform filter coming soon', 'the-admin-vault'); ?></small>
+                </div>
 
-                <select name="s_followers" style="padding:8px;">
-                    <option value=""><?php esc_html_e('Followers', 'the-admin-vault'); ?></option>
-                    <option value="under_10k" <?php selected($followers_filter, 'under_10k'); ?>><?php esc_html_e('Under 10K', 'the-admin-vault'); ?></option>
-                    <option value="10k_50k" <?php selected($followers_filter, '10k_50k'); ?>><?php esc_html_e('10K – 50K', 'the-admin-vault'); ?></option>
-                    <option value="50k_100k" <?php selected($followers_filter, '50k_100k'); ?>><?php esc_html_e('50K – 100K', 'the-admin-vault'); ?></option>
-                    <option value="100k_plus" <?php selected($followers_filter, '100k_plus'); ?>><?php esc_html_e('100K+', 'the-admin-vault'); ?></option>
-                </select>
+                <div style="display:flex; flex-direction:column;">
+                    <select name="s_followers" style="padding:8px;">
+                        <option value=""><?php esc_html_e('Followers', 'the-admin-vault'); ?></option>
+                        <option value="under_10k" <?php selected($followers_filter, 'under_10k'); ?>><?php esc_html_e('Under 10K', 'the-admin-vault'); ?></option>
+                        <option value="10k_50k" <?php selected($followers_filter, '10k_50k'); ?>><?php esc_html_e('10K – 50K', 'the-admin-vault'); ?></option>
+                        <option value="50k_100k" <?php selected($followers_filter, '50k_100k'); ?>><?php esc_html_e('50K – 100K', 'the-admin-vault'); ?></option>
+                        <option value="100k_plus" <?php selected($followers_filter, '100k_plus'); ?>><?php esc_html_e('100K+', 'the-admin-vault'); ?></option>
+                    </select>
+                    <small style="color:#888; font-style:italic;"><?php esc_html_e('Followers filter coming soon', 'the-admin-vault'); ?></small>
+                </div>
 
                 <select name="s_engagement" style="padding:8px;">
                     <option value=""><?php esc_html_e('Engagement', 'the-admin-vault'); ?></option>
@@ -223,11 +276,16 @@ $storytellers = get_posts($args);
             <div class="tav-storyteller-list" style="padding: 15px; max-height: 600px; overflow-y: auto;">
                 <?php if (!empty($storytellers)): ?>
                     <ul style="list-style: none; margin: 0; padding: 0;">
-                        <?php foreach ($storytellers as $st): 
+                        <?php foreach ($storytellers as $st):
                             $is_selected = in_array($st->ID, $assigned_ids);
                             $thumb = get_the_post_thumbnail_url($st->ID, 'thumbnail');
-                            $followers = 0; // consistent with reuse logic
-                            // ... fetch metrics ...
+                            $avg_engagement = (float) get_post_meta($st->ID, 'tav_avg_engagement_rate', true);
+                            $platforms = get_field('platforms_repeater', $st->ID) ?: [];
+                            $total_followers = 0;
+                            foreach ($platforms as $p) {
+                                $total_followers += (int) ($p['follower_count'] ?? 0);
+                            }
+                            $followers_display = $total_followers > 0 ? tav_format_metric($total_followers) : '—';
                         ?>
                             <li style="display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #f0f0f0; <?php echo $is_selected ? 'background: #edfaef;' : ''; ?>">
                                 <input type="checkbox" name="storytellers[]" value="<?php echo $st->ID; ?>" <?php checked($is_selected); ?> style="margin-right: 15px;">
@@ -239,6 +297,18 @@ $storytellers = get_posts($args);
                                 <div>
                                     <strong style="display: block; font-size: 14px;"><?php echo esc_html($st->post_title); ?></strong>
                                     <span style="font-size: 12px; color: #666;"><?php echo esc_html(get_field('location', $st->ID)); ?></span>
+                                </div>
+                                <div style="margin-left: 20px; font-size: 13px; color: #444; min-width: 70px; text-align: right;">
+                                    <?php echo esc_html($followers_display); ?>
+                                </div>
+                                <div style="margin-left: 12px; min-width: 70px; text-align: right;">
+                                    <?php if ($avg_engagement > 0):
+                                        $eng_class = $avg_engagement >= 6 ? 'tav-eng-high' : ($avg_engagement >= 3 ? 'tav-eng-mid' : 'tav-eng-low');
+                                    ?>
+                                        <span class="tav-engagement-badge <?php echo esc_attr($eng_class); ?>"><?php echo esc_html(number_format($avg_engagement, 1)); ?>%</span>
+                                    <?php else: ?>
+                                        —
+                                    <?php endif; ?>
                                 </div>
                                 <div style="margin-left: auto;">
                                     <button type="button" class="button button-small tav-view-storyteller" data-st-id="<?php echo $st->ID; ?>">
@@ -254,12 +324,34 @@ $storytellers = get_posts($args);
             </div>
             
             <div class="tav-panel-footer" style="text-align: right; padding: 15px; background: #f9f9f9; border-top: 1px solid #eee;">
+                <div class="tav-selection-counter" id="tav-selection-counter" data-target="<?php echo (int)$req_count ?: 8; ?>">
+                    <span id="tav-selected-count">0</span> <?php esc_html_e('selected', 'the-admin-vault'); ?>
+                    <span class="tav-counter-target"><?php printf(esc_html__('(target: %d)', 'the-admin-vault'), (int)$req_count ?: 8); ?></span>
+                </div>
                 <button type="submit" class="tav-btn-primary" id="tav-save-fulfillment">
                     <span class="tav-btn-text"><?php esc_html_e('Save & Notify Client', 'the-admin-vault'); ?></span>
                     <span class="tav-spinner" style="display:none;"></span>
                 </button>
             </div>
         </form>
+        <script>
+        (function(){
+            var form    = document.querySelector('.tav-storyteller-list')?.closest('form');
+            var counter = document.getElementById('tav-selection-counter');
+            var output  = document.getElementById('tav-selected-count');
+            if (!form || !counter || !output) return;
+            var target = parseInt(counter.getAttribute('data-target'), 10) || 0;
+            function update() {
+                var n = form.querySelectorAll('input[type="checkbox"][name="storytellers[]"]:checked').length;
+                output.textContent = n;
+                counter.classList.toggle('tav-counter-met', target > 0 && n >= target);
+            }
+            form.addEventListener('change', function(e){
+                if (e.target && e.target.matches('input[type="checkbox"][name="storytellers[]"]')) update();
+            });
+            update();
+        })();
+        </script>
     </div>
 </div>
 
