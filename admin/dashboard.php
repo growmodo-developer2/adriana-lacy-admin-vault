@@ -46,7 +46,7 @@ function tav_dashboard_on_load(): void
         acf_form_head();
     }
 
-    // Handle Fulfillment Form Submission (Save & Notify)
+    // Handle Fulfillment Form Submission (Assign to Project)
     if (isset($_GET['view']) && $_GET['view'] === 'fulfill' && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tav_fulfill_nonce']) && wp_verify_nonce($_POST['tav_fulfill_nonce'], 'tav_fulfill_action')) {
         $debug_log = ABSPATH . 'tav_debug.log';
         if ( defined('WP_DEBUG') && WP_DEBUG ) {
@@ -59,7 +59,8 @@ function tav_dashboard_on_load(): void
             file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "Fulfillment POST processing started\n", FILE_APPEND);
         }
         
-        $selected_storytellers = isset($_POST['storytellers']) ? array_map('intval', $_POST['storytellers']) : [];
+        $selected_storytellers = isset($_POST['storytellers']) ? array_map('intval', (array) $_POST['storytellers']) : [];
+        $selected_storytellers = array_values(array_filter(array_unique($selected_storytellers)));
         
         if ($req_id > 0) {
             // Guard: only fulfill requests that have been paid.
@@ -70,6 +71,14 @@ function tav_dashboard_on_load(): void
                     file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "Blocked fulfillment — request #{$req_id} status is '{$current_status}' (not paid)\n", FILE_APPEND);
                 }
                 wp_safe_redirect(admin_url('admin.php?page=tav-dashboard&view=requests&error=not_paid'));
+                exit;
+            }
+
+            $limits = tav_get_fulfillment_selection_limits($req_id);
+            $selection_count = count($selected_storytellers);
+
+            if ($selection_count < $limits['min'] || $selection_count > $limits['max']) {
+                wp_safe_redirect(admin_url('admin.php?page=tav-dashboard&view=fulfill&request_id=' . $req_id . '&error=selection_count'));
                 exit;
             }
 
@@ -162,7 +171,7 @@ function tav_dashboard_on_load(): void
             }
             
             // Redirect back to requests list
-            $redirect_url = admin_url('admin.php?page=tav-dashboard&view=requests&notified=1');
+            $redirect_url = admin_url('admin.php?page=tav-dashboard&view=requests&notified=1&status=ready_review');
             if ( defined('WP_DEBUG') && WP_DEBUG ) {
                 file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "Redirecting to $redirect_url\n", FILE_APPEND);
             }
@@ -177,11 +186,17 @@ function tav_dashboard_on_load(): void
 
     // Enqueue dashboard CSS.
     add_action('admin_enqueue_scripts', function () {
+        // Use the file's modification time as the cache-busting version so any
+        // edit to the stylesheet is picked up immediately (filemtime() runs at
+        // runtime and is not frozen by OPcache like a constant would be).
+        $css_path = TAV_PLUGIN_DIR . 'assets/css/tav-dashboard.css';
+        $css_ver  = file_exists($css_path) ? (string) filemtime($css_path) : TAV_VERSION;
+
         wp_enqueue_style(
             'tav-dashboard',
             TAV_PLUGIN_URL . 'assets/css/tav-dashboard.css',
             [],
-            TAV_VERSION
+            $css_ver
         );
 
         // Inter font from Google Fonts.
@@ -200,17 +215,21 @@ function tav_dashboard_on_load(): void
             true
         );
 
+        $js_path = TAV_PLUGIN_DIR . 'assets/js/tav-dashboard.js';
+        $js_ver  = file_exists($js_path) ? (string) filemtime($js_path) : TAV_VERSION;
+
         wp_enqueue_script(
             'tav-dashboard',
             TAV_PLUGIN_URL . 'assets/js/tav-dashboard.js',
-            ['jquery'],
-            TAV_VERSION,
+            ['jquery', 'chartjs'],
+            $js_ver,
             true
         );
 
         wp_localize_script('tav-dashboard', 'tavData', [
             'ajaxurl' => admin_url('admin-ajax.php'),
             'nonce'   => wp_create_nonce('tav_dashboard_nonce'),
+            'chart'   => tav_get_revenue_chart_data('30days'),
         ]);
     });
 
@@ -223,6 +242,221 @@ function tav_dashboard_on_load(): void
 /*--------------------------------------------------------------
  * Data helpers
  *------------------------------------------------------------*/
+
+/**
+ * Min/max storyteller selection for fulfillment (Flow 3: 5–8).
+ */
+function tav_get_fulfillment_selection_limits(int $request_id): array
+{
+    $requested = (int) get_post_meta($request_id, 'storyteller_count', true);
+    if ($requested <= 0 && function_exists('get_field')) {
+        $requested = (int) get_field('storyteller_count', $request_id);
+    }
+
+    $min = 5;
+    $max = 8;
+    $target = $requested > 0 ? max($min, min($max, $requested)) : 8;
+
+    return [
+        'min'    => $min,
+        'max'    => $max,
+        'target' => $target,
+    ];
+}
+
+/**
+ * Normalize platform name to a filter slug.
+ */
+function tav_normalize_platform_slug(string $name): string
+{
+    $name = strtolower(trim($name));
+    $aliases = [
+        'x / twitter' => 'twitter',
+        'x'           => 'twitter',
+        'twitter/x'   => 'twitter',
+    ];
+
+    if (isset($aliases[$name])) {
+        return $aliases[$name];
+    }
+
+    return preg_replace('/[^a-z0-9]/', '', $name);
+}
+
+/**
+ * Total followers across all platforms for a storyteller.
+ */
+function tav_get_storyteller_total_followers(int $post_id): int
+{
+    $cached = (int) get_post_meta($post_id, 'tav_total_followers', true);
+    if ($cached > 0) {
+        return $cached;
+    }
+
+    $total = 0;
+    $rows  = function_exists('get_field') ? (get_field('platforms_repeater', $post_id) ?: []) : [];
+    foreach ($rows as $row) {
+        $total += (int) ($row['follower_count'] ?? 0);
+    }
+
+    return $total;
+}
+
+/**
+ * Whether storyteller total followers match a range filter.
+ */
+function tav_storyteller_matches_followers(int $post_id, string $range): bool
+{
+    if ($range === '') {
+        return true;
+    }
+
+    $total = tav_get_storyteller_total_followers($post_id);
+    $ranges = [
+        'under_10k' => [0, 9999],
+        '10k_50k'   => [10000, 49999],
+        '50k_100k'  => [50000, 99999],
+        '100k_plus' => [100000, PHP_INT_MAX],
+    ];
+
+    if (!isset($ranges[$range])) {
+        return true;
+    }
+
+    [$min, $max] = $ranges[$range];
+    return $total >= $min && $total <= $max;
+}
+
+/**
+ * Whether storyteller has a given platform.
+ */
+function tav_storyteller_matches_platform(int $post_id, string $platform): bool
+{
+    if ($platform === '') {
+        return true;
+    }
+
+    $stored = get_post_meta($post_id, 'tav_platforms', true);
+    if (is_string($stored) && $stored !== '') {
+        $slugs = array_filter(array_map('trim', explode(',', $stored)));
+        return in_array($platform, $slugs, true);
+    }
+
+    $rows = function_exists('get_field') ? (get_field('platforms_repeater', $post_id) ?: []) : [];
+    foreach ($rows as $row) {
+        $slug = tav_normalize_platform_slug((string) ($row['platform_name'] ?? ''));
+        if ($slug === $platform) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Search storytellers for the fulfillment picker.
+ */
+function tav_search_fulfillment_storytellers(array $filters): array
+{
+    $search_term       = $filters['s_term'] ?? '';
+    $niche_filter      = $filters['s_niche'] ?? '';
+    $location_filter   = $filters['s_location'] ?? '';
+    $platform_filter   = $filters['s_platform'] ?? '';
+    $followers_filter  = $filters['s_followers'] ?? '';
+    $engagement_filter = $filters['s_engagement'] ?? '';
+
+    $args = [
+        'post_type'      => 'storyteller',
+        'posts_per_page' => 100,
+        'post_status'    => 'publish',
+        'orderby'        => 'title',
+        'order'          => 'ASC',
+    ];
+
+    if ($search_term) {
+        $args['s'] = $search_term;
+    }
+
+    if ($niche_filter) {
+        $args['tax_query'] = [[
+            'taxonomy' => 'vs_niche',
+            'field'    => 'slug',
+            'terms'    => $niche_filter,
+        ]];
+    }
+
+    $meta_queries = [];
+    if ($location_filter) {
+        $meta_queries[] = [
+            'key'     => 'location',
+            'value'   => $location_filter,
+            'compare' => 'LIKE',
+        ];
+    }
+
+    if ($platform_filter) {
+        $meta_queries[] = [
+            'key'     => 'tav_platforms',
+            'value'   => $platform_filter,
+            'compare' => 'LIKE',
+        ];
+    }
+
+    if ($followers_filter) {
+        $follower_ranges = [
+            'under_10k' => [0, 9999],
+            '10k_50k'   => [10000, 49999],
+            '50k_100k'  => [50000, 99999],
+            '100k_plus' => [100000, 999999999],
+        ];
+        if (isset($follower_ranges[$followers_filter])) {
+            $meta_queries[] = [
+                'key'     => 'tav_total_followers',
+                'value'   => $follower_ranges[$followers_filter],
+                'type'    => 'NUMERIC',
+                'compare' => 'BETWEEN',
+            ];
+        }
+    }
+
+    if ($engagement_filter) {
+        $eng_ranges = [
+            'under_2' => [0, 2],
+            '2_5'     => [2, 5],
+            '5_10'    => [5, 10],
+            '10_plus' => [10, 100],
+        ];
+        if (isset($eng_ranges[$engagement_filter])) {
+            $meta_queries[] = [
+                'key'     => 'tav_avg_engagement_rate',
+                'value'   => $eng_ranges[$engagement_filter],
+                'type'    => 'DECIMAL',
+                'compare' => 'BETWEEN',
+            ];
+        }
+    }
+
+    if (!empty($meta_queries)) {
+        $meta_queries['relation'] = 'AND';
+        $args['meta_query'] = $meta_queries;
+    }
+
+    $storytellers = get_posts($args);
+
+    if ($platform_filter || $followers_filter) {
+        $storytellers = array_values(array_filter($storytellers, static function ($post) use ($platform_filter, $followers_filter): bool {
+            if ($platform_filter && !tav_storyteller_matches_platform($post->ID, $platform_filter)) {
+                return false;
+            }
+            if ($followers_filter && !tav_storyteller_matches_followers($post->ID, $followers_filter)) {
+                return false;
+            }
+            return true;
+        }));
+    }
+
+    return $storytellers;
+}
 
 /**
  * Get storyteller counts grouped by campaign status.
@@ -288,80 +522,148 @@ function tav_get_total_storytellers(): int
 }
 
 /**
- * Match acceptance rate.
+ * Decode client_feedback meta (JSON or serialized array).
  *
- * Denominator: all published request posts whose `status` meta is one of
- *              'ready_review', 'assigned', or 'completed' (i.e. reached review stage).
- * Numerator:   subset with status 'assigned' or 'completed' where the
- *              `client_feedback` meta contains at least one value === 'interested'.
+ * @return array<int|string, string>
+ */
+function tav_decode_client_feedback(mixed $raw): array
+{
+    if (empty($raw)) {
+        return [];
+    }
+
+    if (is_array($raw)) {
+        return $raw;
+    }
+
+    if (!is_string($raw)) {
+        return [];
+    }
+
+    $decoded = json_decode($raw, true);
+    if (!is_array($decoded)) {
+        $decoded = maybe_unserialize($raw);
+    }
+
+    return is_array($decoded) ? $decoded : [];
+}
+
+/**
+ * Client satisfaction rate for the admin dashboard.
  *
- * Returns an array:
- *   'value'       => formatted string — e.g. '60.0%' or 'N/A'
- *   'numerator'   => int
- *   'denominator' => int
+ * Business rules (Verified Storytellers workflow):
+ *
+ * 1. Score (displayed as X.X/5.0)
+ *    After admin fulfills a request, clients review storytellers on the
+ *    review page and mark each one "interested" or "pass" (stored in
+ *    `client_feedback` as storyteller_id => feedback).
+ *    Satisfaction score = 5 × (interested reviews ÷ total reviews).
+ *
+ * 2. Finished badge (displayed as "X% Finished")
+ *    Project completion rate among paid requests — what share of requests
+ *    that moved past payment have reached the `completed` status.
+ *
+ * @return array{
+ *   score_display: string,
+ *   finished_display: string,
+ *   score: float|null,
+ *   finished_pct: int,
+ *   interested_count: int,
+ *   feedback_count: int,
+ *   completed_count: int,
+ *   pipeline_count: int
+ * }
+ */
+function tav_get_satisfaction_rate(): array
+{
+    global $wpdb;
+
+    $interested_count = 0;
+    $feedback_count   = 0;
+
+    $feedback_rows = $wpdb->get_results(
+        "SELECT pm.meta_value
+         FROM {$wpdb->postmeta} pm
+         INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+         WHERE pm.meta_key = 'client_feedback'
+           AND p.post_type = 'request'
+           AND p.post_status = 'publish'",
+        ARRAY_A
+    );
+
+    foreach ($feedback_rows as $row) {
+        $entries = tav_decode_client_feedback($row['meta_value'] ?? '');
+        foreach ($entries as $value) {
+            if (!in_array($value, ['interested', 'pass'], true)) {
+                continue;
+            }
+            $feedback_count++;
+            if ($value === 'interested') {
+                $interested_count++;
+            }
+        }
+    }
+
+    $score = null;
+    if ($feedback_count > 0) {
+        $score = round(5 * ($interested_count / $feedback_count), 1);
+    }
+
+    $pipeline_statuses = ['paid', 'in_vetting', 'matching', 'ready_review', 'assigned', 'completed'];
+    $placeholders      = implode(',', array_fill(0, count($pipeline_statuses), '%s'));
+
+    $pipeline_count = (int) $wpdb->get_var(
+        $wpdb->prepare(
+            "SELECT COUNT(DISTINCT p.ID)
+             FROM {$wpdb->posts} p
+             INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
+             WHERE p.post_type = 'request'
+               AND p.post_status = 'publish'
+               AND pm.meta_key = 'status'
+               AND pm.meta_value IN ($placeholders)",
+            ...$pipeline_statuses
+        )
+    );
+
+    $completed_count = (int) $wpdb->get_var(
+        "SELECT COUNT(DISTINCT p.ID)
+         FROM {$wpdb->posts} p
+         INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
+         WHERE p.post_type = 'request'
+           AND p.post_status = 'publish'
+           AND pm.meta_key = 'status'
+           AND pm.meta_value = 'completed'"
+    );
+
+    $finished_pct = $pipeline_count > 0
+        ? (int) round(($completed_count / $pipeline_count) * 100)
+        : 0;
+
+    return [
+        'score'             => $score,
+        'score_display'     => $score !== null ? number_format($score, 1) . '/5.0' : '—/5.0',
+        'finished_pct'      => $finished_pct,
+        'finished_display'  => $pipeline_count > 0
+            ? sprintf(__('%d%% Finished', 'the-admin-vault'), $finished_pct)
+            : __('No data', 'the-admin-vault'),
+        'interested_count'  => $interested_count,
+        'feedback_count'    => $feedback_count,
+        'completed_count'   => $completed_count,
+        'pipeline_count'    => $pipeline_count,
+    ];
+}
+
+/**
+ * @deprecated Use tav_get_satisfaction_rate(). Kept for backward compatibility.
  */
 function tav_get_match_acceptance_rate(): array
 {
-    $review_statuses   = ['ready_review', 'assigned', 'completed'];
-    $accepted_statuses = ['assigned', 'completed'];
-
-    $post_ids = get_posts([
-        'post_type'      => 'request',
-        'post_status'    => 'publish',
-        'posts_per_page' => -1,
-        'fields'         => 'ids',
-        'meta_query'     => [
-            [
-                'key'     => 'status',
-                'value'   => $review_statuses,
-                'compare' => 'IN',
-            ],
-        ],
-    ]);
-
-    $denominator = count($post_ids);
-
-    if ($denominator === 0) {
-        return ['value' => 'N/A', 'numerator' => 0, 'denominator' => 0];
-    }
-
-    $numerator = 0;
-
-    foreach ($post_ids as $post_id) {
-        // Only requests that have actually been acted on count toward the numerator.
-        $status = get_post_meta($post_id, 'status', true);
-        if (!in_array($status, $accepted_statuses, true)) {
-            continue;
-        }
-
-        $raw = get_post_meta($post_id, 'client_feedback', true);
-
-        if (empty($raw)) {
-            continue;
-        }
-
-        // Decode: try JSON first, then PHP serialisation.
-        if (is_string($raw)) {
-            $decoded = json_decode($raw, true);
-            if (!is_array($decoded)) {
-                $decoded = maybe_unserialize($raw);
-            }
-        } else {
-            $decoded = $raw;
-        }
-
-        // Check if any feedback value in the array equals 'interested'.
-        if (is_array($decoded) && in_array('interested', $decoded, true)) {
-            $numerator++;
-        }
-    }
-
-    $percentage = round(($numerator / $denominator) * 100, 1);
+    $satisfaction = tav_get_satisfaction_rate();
 
     return [
-        'value'       => number_format($percentage, 1) . '%',
-        'numerator'   => $numerator,
-        'denominator' => $denominator,
+        'value'       => $satisfaction['score_display'],
+        'numerator'   => $satisfaction['interested_count'],
+        'denominator' => $satisfaction['feedback_count'],
     ];
 }
 
@@ -406,49 +708,136 @@ function tav_get_revenue(): array
 }
 
 /**
- * Revenue grouped by day/month for the selected period.
- * Returns ['labels' => [...], 'values' => [...]]
+ * Revenue grouped by day/month/hour for the selected period.
+ *
+ * @return array{labels:string[],received:float[],pending:float[],total:float}
  */
 function tav_get_revenue_chart_data(string $period = '30days'): array
 {
+    $empty = [
+        'labels'   => [],
+        'received' => [],
+        'pending'  => [],
+        'total'    => 0.0,
+    ];
+
     if (!class_exists('WooCommerce')) {
-        return ['labels' => [], 'values' => []];
+        return $empty;
     }
 
-    $args = [
-        'status' => ['completed', 'processing'],
+    $received_by_key = [];
+    $pending_by_key  = [];
+    $since           = null;
+    $key_format      = 'Y-m-d';
+    $label_format    = 'M j';
+
+    if ($period === '24hours') {
+        $since        = strtotime('-24 hours');
+        $key_format   = 'Y-m-d H';
+        $label_format = 'g A';
+    } elseif ($period === '7days') {
+        $since = strtotime('-6 days midnight');
+    } elseif ($period === '30days') {
+        $since = strtotime('-29 days midnight');
+    }
+
+    $order_args = [
         'type'   => 'shop_order',
         'limit'  => -1,
         'return' => 'objects',
     ];
-
-    if ($period === '7days') {
-        $args['date_created'] = '>' . strtotime('-7 days');
-    } elseif ($period === '30days') {
-        $args['date_created'] = '>' . strtotime('-30 days');
-    } elseif ($period === '24hours') {
-        $args['date_created'] = '>' . strtotime('-24 hours');
+    if ($since) {
+        $order_args['date_created'] = '>' . $since;
     }
-    // 'alltime': no date filter
 
-    $orders = wc_get_orders($args);
-    $by_day = [];
-
-    foreach ($orders as $order) {
+    foreach (wc_get_orders(array_merge($order_args, ['status' => ['completed', 'processing']])) as $order) {
         $created = $order->get_date_created();
-        if (!$created) continue;
-        $group = ($period === 'alltime')
-            ? date('Y-m', $created->getTimestamp())   // group by month for all-time
-            : date('Y-m-d', $created->getTimestamp()); // group by day otherwise
-        $by_day[$group] = ($by_day[$group] ?? 0.0) + (float) $order->get_total();
+        if (!$created) {
+            continue;
+        }
+        $key = $period === 'alltime'
+            ? gmdate('Y-m', $created->getTimestamp())
+            : gmdate($key_format, $created->getTimestamp());
+        $received_by_key[$key] = ($received_by_key[$key] ?? 0.0) + (float) $order->get_total();
     }
 
-    ksort($by_day);
+    foreach (wc_get_orders(array_merge($order_args, ['status' => ['pending', 'on-hold']])) as $order) {
+        $created = $order->get_date_created();
+        if (!$created) {
+            continue;
+        }
+        $key = $period === 'alltime'
+            ? gmdate('Y-m', $created->getTimestamp())
+            : gmdate($key_format, $created->getTimestamp());
+        $pending_by_key[$key] = ($pending_by_key[$key] ?? 0.0) + (float) $order->get_total();
+    }
+
+    $labels   = [];
+    $received = [];
+    $pending  = [];
+
+    if ($period === 'alltime') {
+        $start = new DateTime('first day of -11 months');
+        $end   = new DateTime('first day of next month');
+        $step  = new DateInterval('P1M');
+        for ($cursor = clone $start; $cursor < $end; $cursor->add($step)) {
+            $key       = $cursor->format('Y-m');
+            $labels[]  = $cursor->format('M');
+            $received[] = round($received_by_key[$key] ?? 0.0, 2);
+            $pending[]  = round($pending_by_key[$key] ?? 0.0, 2);
+        }
+    } elseif ($period === '24hours') {
+        for ($i = 23; $i >= 0; $i--) {
+            $ts        = strtotime("-{$i} hours");
+            $key       = gmdate('Y-m-d H', $ts);
+            $labels[]  = gmdate($label_format, $ts);
+            $received[] = round($received_by_key[$key] ?? 0.0, 2);
+            $pending[]  = round($pending_by_key[$key] ?? 0.0, 2);
+        }
+    } elseif ($period === '7days') {
+        for ($i = 6; $i >= 0; $i--) {
+            $ts        = strtotime("-{$i} days");
+            $key       = gmdate('Y-m-d', $ts);
+            $labels[]  = gmdate($label_format, $ts);
+            $received[] = round($received_by_key[$key] ?? 0.0, 2);
+            $pending[]  = round($pending_by_key[$key] ?? 0.0, 2);
+        }
+    } else {
+        for ($i = 29; $i >= 0; $i--) {
+            $ts        = strtotime("-{$i} days");
+            $key       = gmdate('Y-m-d', $ts);
+            $labels[]  = gmdate($label_format, $ts);
+            $received[] = round($received_by_key[$key] ?? 0.0, 2);
+            $pending[]  = round($pending_by_key[$key] ?? 0.0, 2);
+        }
+    }
 
     return [
-        'labels' => array_keys($by_day),
-        'values' => array_values($by_day),
+        'labels'   => $labels,
+        'received' => $received,
+        'pending'  => $pending,
+        'total'    => round(array_sum($received), 2),
     ];
+}
+
+/**
+ * Human-readable request title for dashboard lists.
+ */
+function tav_get_request_title(int $request_id, string $fallback = ''): string
+{
+    $title = trim($fallback !== '' ? $fallback : get_the_title($request_id));
+    if ($title !== '' && !in_array($title, ['Auto Draft', '(no title)'], true)) {
+        return $title;
+    }
+
+    if (function_exists('get_field')) {
+        $goal = get_field('campaign_goal', $request_id);
+        if (is_string($goal) && $goal !== '') {
+            return $goal;
+        }
+    }
+
+    return sprintf(__('Request #%d', 'the-admin-vault'), $request_id);
 }
 
 /**
@@ -520,7 +909,7 @@ function tav_get_pending_fulfillment_requests(int $limit = 5): array
     foreach ($posts as $p) {
         $out[] = [
             'id'       => $p->ID,
-            'title'    => $p->post_title,
+            'title'    => tav_get_request_title($p->ID, $p->post_title),
             'status'   => get_post_meta($p->ID, 'status', true),
             'due_date' => get_post_meta($p->ID, 'due_date', true),
             'client'   => get_the_author_meta('display_name', (int) $p->post_author) ?: __('Unknown', 'the-admin-vault'),

@@ -1,0 +1,58 @@
+/* Front-end admin portal — overrides theme / wp-admin bleed styles */
+
+body.tav-admin-portal-page {
+    margin: 0;
+    padding: 0;
+    background: var(--tav-bg, #eef2f6);
+}
+
+body.tav-admin-portal-page #wpadminbar {
+    display: none !important;
+}
+
+.tav-front-portal.tav-dashboard-wrap {
+    margin: 0;
+    min-height: 100vh;
+}
+
+.tav-front-portal .tav-sidebar {
+    width: 72px;
+}
+
+.tav-front-portal .tav-sidebar.collapsed {
+    width: 72px;
+}
+
+.tav-front-portal .tav-sidebar-brand {
+    justify-content: center;
+    padding: 20px 12px;
+}
+
+.tav-front-portal .tav-sidebar-brand-text,
+.tav-front-portal .tav-sidebar-nav a span:not(.dashicons) {
+    display: none;
+}
+
+.tav-front-portal .tav-sidebar-nav a {
+    justify-content: center;
+    padding: 12px 0;
+}
+
+.tav-front-portal .tav-sidebar-toggle {
+    display: none;
+}
+
+.tav-front-portal .tav-content {
+    padding: 28px 32px 48px;
+}
+
+.tav-admin-portal-message {
+    max-width: 480px;
+    margin: 80px auto;
+    padding: 32px;
+    text-align: center;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    font-family: var(--tav-font, Inter, sans-serif);
+}

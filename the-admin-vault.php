@@ -3,7 +3,7 @@
  * Plugin Name:  The Admin Vault
  * Plugin URI:   https://github.com/oyic/the-admin-vault
  * Description:  A private, admin-only vault for managing Storyteller profiles — social handles, verified metrics, private contact info, and authenticity scores. Built on ACF Pro.
- * Version:      1.1.1
+ * Version:      1.2.5
  * Author:       OYIC
  * Author URI:   https://oyic.com
  * License:      GPL-2.0-or-later
@@ -16,7 +16,7 @@ defined('ABSPATH') || exit;
 /*--------------------------------------------------------------
  * Constants
  *------------------------------------------------------------*/
-define('TAV_VERSION', '1.1.1');
+define('TAV_VERSION', '1.2.5');
 define('TAV_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('TAV_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -24,6 +24,7 @@ define('TAV_PLUGIN_URL', plugin_dir_url(__FILE__));
  * Load Admin Dashboard
  *------------------------------------------------------------*/
 require_once TAV_PLUGIN_DIR . 'admin/dashboard.php';
+require_once TAV_PLUGIN_DIR . 'frontend/admin-portal.php';
 
 /*--------------------------------------------------------------
  * 1. Register Custom Post Type — Storytellers
@@ -993,6 +994,21 @@ function tav_persist_avg_engagement_rate($post_id): void
 
     update_post_meta($post_id, 'tav_avg_engagement_rate', $avg);
 
+    $total_followers = 0;
+    $platform_slugs  = [];
+    if (!empty($rows) && is_array($rows)) {
+        foreach ($rows as $row) {
+            $total_followers += (int) ($row['follower_count'] ?? 0);
+            $slug = tav_normalize_platform_slug((string) ($row['platform_name'] ?? ''));
+            if ($slug !== '') {
+                $platform_slugs[] = $slug;
+            }
+        }
+    }
+
+    update_post_meta($post_id, 'tav_total_followers', $total_followers);
+    update_post_meta($post_id, 'tav_platforms', implode(',', array_unique($platform_slugs)));
+
     // Sync the is_verified toggle to campaign_status: checking the box
     // promotes the storyteller to 'verified' without forcing the admin
     // to also change the select. campaign_status remains the source of
@@ -1041,9 +1057,64 @@ function tav_backfill_engagement_rates(): void
 
         $avg = !empty($rates) ? round(array_sum($rates) / count($rates), 2) : 0.0;
         update_post_meta($post_id, 'tav_avg_engagement_rate', $avg);
+
+        $total_followers = 0;
+        $platform_slugs  = [];
+        if (!empty($rows) && is_array($rows)) {
+            foreach ($rows as $row) {
+                $total_followers += (int) ($row['follower_count'] ?? 0);
+                $slug = function_exists('tav_normalize_platform_slug')
+                    ? tav_normalize_platform_slug((string) ($row['platform_name'] ?? ''))
+                    : strtolower((string) ($row['platform_name'] ?? ''));
+                if ($slug !== '') {
+                    $platform_slugs[] = $slug;
+                }
+            }
+        }
+        update_post_meta($post_id, 'tav_total_followers', $total_followers);
+        update_post_meta($post_id, 'tav_platforms', implode(',', array_unique($platform_slugs)));
     }
 
     update_option('tav_engagement_backfill_done', true);
+}
+
+add_action('admin_init', 'tav_backfill_storyteller_filter_meta');
+
+function tav_backfill_storyteller_filter_meta(): void
+{
+    if (get_option('tav_storyteller_filters_backfill_done')) {
+        return;
+    }
+
+    $post_ids = get_posts([
+        'post_type'      => 'storyteller',
+        'post_status'    => 'publish',
+        'posts_per_page' => -1,
+        'fields'         => 'ids',
+    ]);
+
+    foreach ($post_ids as $post_id) {
+        $rows            = get_field('platforms_repeater', $post_id);
+        $total_followers = 0;
+        $platform_slugs  = [];
+
+        if (!empty($rows) && is_array($rows)) {
+            foreach ($rows as $row) {
+                $total_followers += (int) ($row['follower_count'] ?? 0);
+                $slug = function_exists('tav_normalize_platform_slug')
+                    ? tav_normalize_platform_slug((string) ($row['platform_name'] ?? ''))
+                    : strtolower((string) ($row['platform_name'] ?? ''));
+                if ($slug !== '') {
+                    $platform_slugs[] = $slug;
+                }
+            }
+        }
+
+        update_post_meta($post_id, 'tav_total_followers', $total_followers);
+        update_post_meta($post_id, 'tav_platforms', implode(',', array_unique($platform_slugs)));
+    }
+
+    update_option('tav_storyteller_filters_backfill_done', true);
 }
 
 /*--------------------------------------------------------------

@@ -21,6 +21,7 @@ if (empty($assigned_ids)) {
 }
 $assigned_ids = is_array($assigned_ids) ? array_map('intval', $assigned_ids) : [];
 
+$selection_limits = tav_get_fulfillment_selection_limits($req_id);
 
 // Client Brief Data
 $client_id = $request->post_author;
@@ -65,70 +66,34 @@ if (empty($request_niches)) {
 }
 
 
-// Storyteller Search Logic — all filters
-$search_term     = isset($_GET['s_term'])       ? sanitize_text_field($_GET['s_term'])       : '';
-$niche_filter    = isset($_GET['s_niche'])      ? sanitize_text_field($_GET['s_niche'])      : '';
-$location_filter = isset($_GET['s_location'])   ? sanitize_text_field($_GET['s_location'])   : '';
-$platform_filter = isset($_GET['s_platform'])   ? sanitize_text_field($_GET['s_platform'])   : '';
-$followers_filter = isset($_GET['s_followers']) ? sanitize_text_field($_GET['s_followers'])  : '';
+// Storyteller search — filters by name, niche, location, platform, followers, engagement.
+$storytellers = tav_search_fulfillment_storytellers([
+    's_term'       => isset($_GET['s_term']) ? sanitize_text_field($_GET['s_term']) : '',
+    's_niche'      => isset($_GET['s_niche']) ? sanitize_text_field($_GET['s_niche']) : '',
+    's_location'   => isset($_GET['s_location']) ? sanitize_text_field($_GET['s_location']) : '',
+    's_platform'   => isset($_GET['s_platform']) ? sanitize_text_field($_GET['s_platform']) : '',
+    's_followers'  => isset($_GET['s_followers']) ? sanitize_text_field($_GET['s_followers']) : '',
+    's_engagement' => isset($_GET['s_engagement']) ? sanitize_text_field($_GET['s_engagement']) : '',
+]);
+
+$search_term       = isset($_GET['s_term']) ? sanitize_text_field($_GET['s_term']) : '';
+$niche_filter      = isset($_GET['s_niche']) ? sanitize_text_field($_GET['s_niche']) : '';
+$location_filter   = isset($_GET['s_location']) ? sanitize_text_field($_GET['s_location']) : '';
+$platform_filter   = isset($_GET['s_platform']) ? sanitize_text_field($_GET['s_platform']) : '';
+$followers_filter  = isset($_GET['s_followers']) ? sanitize_text_field($_GET['s_followers']) : '';
 $engagement_filter = isset($_GET['s_engagement']) ? sanitize_text_field($_GET['s_engagement']) : '';
 
-$args = [
-    'post_type'      => 'storyteller',
-    'posts_per_page' => 50,
-    'post_status'    => 'publish',
-];
-
-if ($search_term) {
-    $args['s'] = $search_term;
-}
-
-if ($niche_filter) {
-    $args['tax_query'] = [[
-        'taxonomy' => 'vs_niche',
-        'field'    => 'slug',
-        'terms'    => $niche_filter,
-    ]];
-}
-
-$meta_queries = [];
-if ($location_filter) {
-    $meta_queries[] = [
-        'key'     => 'location',
-        'value'   => $location_filter,
-        'compare' => 'LIKE',
-    ];
-}
-// Platform filter removed — ACF repeater sub-fields not queryable via WP_Meta_Query. Implement in Phase 2 via flat meta on save.
-// Followers filter removed — same reason as platform filter; relies on platforms_repeater sub-fields.
-if ($engagement_filter) {
-    $eng_ranges = [
-        'under_2'   => [0, 2],
-        '2_5'       => [2, 5],
-        '5_10'      => [5, 10],
-        '10_plus'   => [10, 100],
-    ];
-    if (isset($eng_ranges[$engagement_filter])) {
-        // Use the persisted flat key (tav_avg_engagement_rate) instead of a
-        // wildcard LIKE on platforms_repeater_%_engagement_rate — faster and
-        // reliable because the meta key is exact and the value is indexed.
-        $meta_queries[] = [
-            'key'     => 'tav_avg_engagement_rate',
-            'value'   => $eng_ranges[$engagement_filter],
-            'type'    => 'DECIMAL',
-            'compare' => 'BETWEEN',
-        ];
-    }
-}
-if (!empty($meta_queries)) {
-    $meta_queries['relation'] = 'AND';
-    $args['meta_query'] = $meta_queries;
-}
-
-$storytellers = get_posts($args);
-
-
 ?>
+
+<?php if (isset($_GET['error']) && $_GET['error'] === 'selection_count'): ?>
+    <div class="notice notice-error is-dismissible">
+        <p><?php printf(
+            esc_html__('Please select between %1$d and %2$d storytellers before assigning to the project.', 'the-admin-vault'),
+            (int) $selection_limits['min'],
+            (int) $selection_limits['max']
+        ); ?></p>
+    </div>
+<?php endif; ?>
 
 <div class="tav-page-header">
     <h1 class="tav-page-title"><?php esc_html_e('Fulfill Request', 'the-admin-vault'); ?>: <?php echo esc_html($project_name); ?></h1>
@@ -231,28 +196,22 @@ $storytellers = get_posts($args);
                     <?php endforeach; ?>
                 </select>
 
-                <div style="display:flex; flex-direction:column;">
-                    <select name="s_platform" style="padding:8px;">
-                        <option value=""><?php esc_html_e('All Platforms', 'the-admin-vault'); ?></option>
-                        <?php
-                        $platforms = ['instagram' => 'Instagram', 'tiktok' => 'TikTok', 'youtube' => 'YouTube', 'twitter' => 'X / Twitter', 'facebook' => 'Facebook', 'linkedin' => 'LinkedIn'];
-                        foreach ($platforms as $pk => $pl): ?>
-                            <option value="<?php echo esc_attr($pk); ?>" <?php selected($platform_filter, $pk); ?>><?php echo esc_html($pl); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                    <small style="color:#888; font-style:italic;"><?php esc_html_e('Platform filter coming soon', 'the-admin-vault'); ?></small>
-                </div>
+                <select name="s_platform" style="padding:8px;">
+                    <option value=""><?php esc_html_e('All Platforms', 'the-admin-vault'); ?></option>
+                    <?php
+                    $platforms = ['instagram' => 'Instagram', 'tiktok' => 'TikTok', 'youtube' => 'YouTube', 'twitter' => 'X / Twitter', 'facebook' => 'Facebook', 'linkedin' => 'LinkedIn'];
+                    foreach ($platforms as $pk => $pl): ?>
+                        <option value="<?php echo esc_attr($pk); ?>" <?php selected($platform_filter, $pk); ?>><?php echo esc_html($pl); ?></option>
+                    <?php endforeach; ?>
+                </select>
 
-                <div style="display:flex; flex-direction:column;">
-                    <select name="s_followers" style="padding:8px;">
+                <select name="s_followers" style="padding:8px;">
                         <option value=""><?php esc_html_e('Followers', 'the-admin-vault'); ?></option>
                         <option value="under_10k" <?php selected($followers_filter, 'under_10k'); ?>><?php esc_html_e('Under 10K', 'the-admin-vault'); ?></option>
                         <option value="10k_50k" <?php selected($followers_filter, '10k_50k'); ?>><?php esc_html_e('10K – 50K', 'the-admin-vault'); ?></option>
                         <option value="50k_100k" <?php selected($followers_filter, '50k_100k'); ?>><?php esc_html_e('50K – 100K', 'the-admin-vault'); ?></option>
                         <option value="100k_plus" <?php selected($followers_filter, '100k_plus'); ?>><?php esc_html_e('100K+', 'the-admin-vault'); ?></option>
-                    </select>
-                    <small style="color:#888; font-style:italic;"><?php esc_html_e('Followers filter coming soon', 'the-admin-vault'); ?></small>
-                </div>
+                </select>
 
                 <select name="s_engagement" style="padding:8px;">
                     <option value=""><?php esc_html_e('Engagement', 'the-admin-vault'); ?></option>
@@ -271,7 +230,7 @@ $storytellers = get_posts($args);
             </div>
         </form>
 
-        <form method="POST">
+        <form method="POST" id="tav-fulfillment-form">
             <?php wp_nonce_field('tav_fulfill_action', 'tav_fulfill_nonce'); ?>
             <div class="tav-storyteller-list" style="padding: 15px; max-height: 600px; overflow-y: auto;">
                 <?php if (!empty($storytellers)): ?>
@@ -324,31 +283,84 @@ $storytellers = get_posts($args);
             </div>
             
             <div class="tav-panel-footer" style="text-align: right; padding: 15px; background: #f9f9f9; border-top: 1px solid #eee;">
-                <div class="tav-selection-counter" id="tav-selection-counter" data-target="<?php echo (int)$req_count ?: 8; ?>">
+                <div class="tav-selection-counter" id="tav-selection-counter"
+                     data-min="<?php echo (int) $selection_limits['min']; ?>"
+                     data-max="<?php echo (int) $selection_limits['max']; ?>"
+                     data-target="<?php echo (int) $selection_limits['target']; ?>">
                     <span id="tav-selected-count">0</span> <?php esc_html_e('selected', 'the-admin-vault'); ?>
-                    <span class="tav-counter-target"><?php printf(esc_html__('(target: %d)', 'the-admin-vault'), (int)$req_count ?: 8); ?></span>
+                    <span class="tav-counter-target"><?php printf(
+                        esc_html__('(required: %1$d–%2$d, target: %3$d)', 'the-admin-vault'),
+                        (int) $selection_limits['min'],
+                        (int) $selection_limits['max'],
+                        (int) $selection_limits['target']
+                    ); ?></span>
                 </div>
-                <button type="submit" class="tav-btn-primary" id="tav-save-fulfillment">
-                    <span class="tav-btn-text"><?php esc_html_e('Save & Notify Client', 'the-admin-vault'); ?></span>
+                <p id="tav-selection-error" class="tav-selection-error" style="display:none;color:#b91c1c;font-size:13px;margin:0 0 10px;"></p>
+                <button type="submit" class="tav-btn-primary" id="tav-save-fulfillment" disabled>
+                    <span class="tav-btn-text"><?php esc_html_e('Assign to Project', 'the-admin-vault'); ?></span>
                     <span class="tav-spinner" style="display:none;"></span>
                 </button>
             </div>
         </form>
         <script>
         (function(){
-            var form    = document.querySelector('.tav-storyteller-list')?.closest('form');
+            var form    = document.getElementById('tav-fulfillment-form');
             var counter = document.getElementById('tav-selection-counter');
             var output  = document.getElementById('tav-selected-count');
-            if (!form || !counter || !output) return;
-            var target = parseInt(counter.getAttribute('data-target'), 10) || 0;
+            var errorEl = document.getElementById('tav-selection-error');
+            var submit  = document.getElementById('tav-save-fulfillment');
+            if (!form || !counter || !output || !submit) return;
+
+            var min    = parseInt(counter.getAttribute('data-min'), 10) || 5;
+            var max    = parseInt(counter.getAttribute('data-max'), 10) || 8;
+            var target = parseInt(counter.getAttribute('data-target'), 10) || max;
+
             function update() {
                 var n = form.querySelectorAll('input[type="checkbox"][name="storytellers[]"]:checked').length;
                 output.textContent = n;
-                counter.classList.toggle('tav-counter-met', target > 0 && n >= target);
+                counter.classList.toggle('tav-counter-met', n >= min && n <= max);
+                submit.disabled = n < min || n > max;
+
+                if (errorEl) {
+                    if (n > max) {
+                        errorEl.style.display = 'block';
+                        errorEl.textContent = 'Select at most ' + max + ' storytellers.';
+                    } else if (n > 0 && n < min) {
+                        errorEl.style.display = 'block';
+                        errorEl.textContent = 'Select at least ' + min + ' storytellers to assign.';
+                    } else {
+                        errorEl.style.display = 'none';
+                        errorEl.textContent = '';
+                    }
+                }
             }
+
             form.addEventListener('change', function(e){
-                if (e.target && e.target.matches('input[type="checkbox"][name="storytellers[]"]')) update();
+                if (!e.target || !e.target.matches('input[type="checkbox"][name="storytellers[]"]')) {
+                    return;
+                }
+                var checked = form.querySelectorAll('input[type="checkbox"][name="storytellers[]"]:checked');
+                if (e.target.checked && checked.length > max) {
+                    e.target.checked = false;
+                    if (errorEl) {
+                        errorEl.style.display = 'block';
+                        errorEl.textContent = 'You can select up to ' + max + ' storytellers.';
+                    }
+                }
+                update();
             });
+
+            form.addEventListener('submit', function(e){
+                var n = form.querySelectorAll('input[type="checkbox"][name="storytellers[]"]:checked').length;
+                if (n < min || n > max) {
+                    e.preventDefault();
+                    if (errorEl) {
+                        errorEl.style.display = 'block';
+                        errorEl.textContent = 'Please select between ' + min + ' and ' + max + ' storytellers.';
+                    }
+                }
+            });
+
             update();
         })();
         </script>

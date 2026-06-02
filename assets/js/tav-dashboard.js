@@ -14,27 +14,164 @@ jQuery(document).ready(function ($) {
         localStorage.setItem(storageKey, $sidebar.hasClass('collapsed'));
     });
 
-    // Fulfillment Save & Notify Loading State
+    // ── Revenue chart ───────────────────────────────────────────────
+    function tavReadInitialChartData() {
+        if (window.tavData && window.tavData.chart) {
+            return window.tavData.chart;
+        }
+        var node = document.getElementById('tav-chart-initial-data');
+        if (!node) {
+            return null;
+        }
+        try {
+            return JSON.parse(node.textContent || '{}');
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function tavFormatMoney(value) {
+        return '$' + Number(value || 0).toLocaleString(undefined, {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        });
+    }
+
+    function tavInitRevenueChart() {
+        var canvas = document.getElementById('tav-revenue-chart');
+        if (!canvas || typeof Chart === 'undefined') {
+            return null;
+        }
+
+        var initial = tavReadInitialChartData() || {
+            labels: [],
+            received: [],
+            pending: [],
+            total: 0,
+        };
+
+        var chart = new Chart(canvas, {
+            type: 'line',
+            data: {
+                labels: initial.labels || [],
+                datasets: [
+                    {
+                        label: 'Received',
+                        data: initial.received || [],
+                        borderColor: '#269EB2',
+                        backgroundColor: 'rgba(38, 158, 178, 0.14)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.35,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                    },
+                    {
+                        label: 'Pending',
+                        data: initial.pending || [],
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.35,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function (ctx) {
+                                return ctx.dataset.label + ': ' + tavFormatMoney(ctx.parsed.y);
+                            },
+                        },
+                    },
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            color: '#94a3b8',
+                            maxRotation: 0,
+                            autoSkip: true,
+                            maxTicksLimit: 8,
+                        },
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(148, 163, 184, 0.18)' },
+                        ticks: {
+                            color: '#94a3b8',
+                            callback: function (v) {
+                                return tavFormatMoney(v);
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        function tavUpdateChartTotal(total) {
+            var $total = $('#tav-chart-total');
+            if ($total.length) {
+                $total.text(tavFormatMoney(total));
+            }
+        }
+
+        tavUpdateChartTotal(initial.total || 0);
+
+        $(document).on('click', '.tav-chart-btn', function () {
+            var $btn = $(this);
+            var period = $btn.data('period');
+            if (!period || !window.tavData) {
+                return;
+            }
+
+            $('.tav-chart-btn').removeClass('tav-chart-active');
+            $btn.addClass('tav-chart-active');
+
+            $.post(window.tavData.ajaxurl, {
+                action: 'tav_get_chart_data',
+                nonce: window.tavData.nonce,
+                period: period,
+            }).done(function (res) {
+                if (!res || !res.success || !res.data) {
+                    return;
+                }
+                chart.data.labels = res.data.labels || [];
+                chart.data.datasets[0].data = res.data.received || [];
+                chart.data.datasets[1].data = res.data.pending || [];
+                chart.update();
+                tavUpdateChartTotal(res.data.total || 0);
+            });
+        });
+
+        return chart;
+    }
+
+    tavInitRevenueChart();
+
+    // Fulfillment — Assign to Project loading state
     const showLoading = function () {
-        console.log('TAV: showLoading triggered');
         const $btn = $('#tav-save-fulfillment');
         if ($btn.length) {
-            console.log('TAV: Button found, showing spinner');
             $btn.data('loading', true);
             $btn.find('.tav-btn-text').css('opacity', '0.5');
             $btn.find('.tav-spinner').show();
-        } else {
-            console.log('TAV: Button #tav-save-fulfillment NOT found');
         }
     };
 
     $(document).on('click', '#tav-save-fulfillment', function () {
-        console.log('TAV: Button clicked');
         showLoading();
     });
 
-    $(document).on('submit', 'form', function () {
-        console.log('TAV: Form submitted');
+    $(document).on('submit', '#tav-fulfillment-form', function () {
         showLoading();
     });
 

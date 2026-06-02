@@ -115,19 +115,23 @@ if ($is_storytellers):
                     foreach ($all_st as $post):
                         $loc = get_field('location', $post->ID) ?: '—';
                         
-                        // Aggregate data from repeater
-                        $niche_list = [];
+                        // Aggregate data from the platforms repeater.
+                        // Read via get_field() (array) instead of have_rows():
+                        // have_rows() can mis-read when iterating many posts in a
+                        // single request, which made saved rows show 0 followers
+                        // and "—" platforms. get_field() matches how the save hook
+                        // reads the data, so the list always reflects saved values.
                         $plat_list = [];
                         $followers = 0;
 
-                        if (have_rows('platforms_repeater', $post->ID)) {
-                            while (have_rows('platforms_repeater', $post->ID)) {
-                                the_row();
-                                $p_name = get_sub_field('platform_name');
-                                $p_name_label = ucfirst($p_name); // Simplified label
-                                $plat_list[] = $p_name_label;
-
-                                $followers += (int)get_sub_field('follower_count');
+                        $platform_rows = get_field('platforms_repeater', $post->ID);
+                        if (is_array($platform_rows)) {
+                            foreach ($platform_rows as $p_row) {
+                                $p_name = (string) ($p_row['platform_name'] ?? '');
+                                if ($p_name !== '') {
+                                    $plat_list[] = ucfirst($p_name);
+                                }
+                                $followers += (int) ($p_row['follower_count'] ?? 0);
                             }
                         }
 

@@ -4,19 +4,19 @@
 
 /* ── Tokens ────────────────────────────────────────────────── */
 :root {
-    --tav-sidebar-bg: #111827;
+    --tav-sidebar-bg: #0f3d4c;
     --tav-sidebar-w: 240px;
     --tav-sidebar-collapsed-w: 68px;
-    --tav-sidebar-hover: rgba(255, 255, 255, .08);
-    --tav-sidebar-active: rgba(56, 189, 248, .15);
-    --tav-sidebar-text: #94a3b8;
+    --tav-sidebar-hover: rgba(255, 255, 255, .1);
+    --tav-sidebar-active: rgba(255, 255, 255, .14);
+    --tav-sidebar-text: #b8d4de;
     --tav-sidebar-text-active: #ffffff;
-    --tav-accent: #38bdf8;
+    --tav-accent: #269EB2;
     --tav-accent-green: #22c55e;
-    --tav-bg: #f1f5f9;
+    --tav-bg: #eef2f6;
     --tav-card-bg: #ffffff;
-    --tav-card-radius: 12px;
-    --tav-card-shadow: 0 1px 3px rgba(0, 0, 0, .06), 0 1px 2px rgba(0, 0, 0, .04);
+    --tav-card-radius: 16px;
+    --tav-card-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 8px 24px rgba(15, 23, 42, .04);
     --tav-text-primary: #0f172a;
     --tav-text-secondary: #64748b;
     --tav-text-muted: #94a3b8;
@@ -393,7 +393,17 @@
     color: #d97706;
 }
 
-.tav-stat-badge {
+.tav-stat-icon.satisfaction {
+    background: #e0f2fe;
+    color: #0284c7;
+}
+
+.tav-stat-sublabel {
+    font-size: 11px;
+    color: var(--tav-text-muted);
+    margin-top: 4px;
+    line-height: 1.4;
+}
     font-size: 12px;
     font-weight: 600;
     padding: 3px 8px;
@@ -1729,6 +1739,7 @@
 .tav-selection-counter { margin-bottom: 12px; font-size: 14px; font-weight: 600; color: #666; }
 .tav-selection-counter.tav-counter-met { color: #155724; }
 .tav-counter-target { font-weight: 400; color: #999; }
+.tav-selection-error { text-align: right; }
 
 .tav-fulfillment-center .tav-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .tav-panel-link { font-size: 13px; color: #269EB2; text-decoration: none; }
@@ -1767,16 +1778,335 @@
 .tav-brief-value p:last-child { margin-bottom: 0; }
 
 /* ── Revenue Chart ─────────────────────────────────────────── */
-.tav-chart-filters { display:flex; gap:6px; }
+.tav-dash-topbar {
+    margin-bottom: 24px;
+}
+
+.tav-dashboard-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 24px;
+    align-items: start;
+}
+
+.tav-dashboard-main {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.tav-dashboard-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+}
+
+.tav-stats-grid--compact {
+    grid-template-columns: repeat(3, 1fr);
+    margin-bottom: 0;
+}
+
+.tav-chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 24px 24px 0;
+}
+
+.tav-chart-title {
+    margin: 0 0 8px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--tav-text-primary);
+}
+
+.tav-chart-summary {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.tav-chart-total {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--tav-text-primary);
+    letter-spacing: -0.02em;
+}
+
+.tav-chart-sub {
+    font-size: 13px;
+    color: var(--tav-text-muted);
+}
+
+.tav-chart-canvas-wrap {
+    position: relative;
+    height: 300px;
+    padding: 12px 20px 0;
+}
+
+.tav-chart-legend {
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+    padding: 8px 24px 20px;
+}
+
+.tav-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--tav-text-secondary);
+}
+
+.tav-legend-item::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+}
+
+.tav-legend-received::before { background: #269EB2; }
+.tav-legend-pending::before { background: #f59e0b; }
+
+.tav-chart-filters {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
 .tav-chart-btn {
-    padding:4px 12px; font-size:12px;
-    border:1px solid #ddd; border-radius:4px;
-    background:#fff; cursor:pointer; color:#666;
+    padding: 6px 12px;
+    font-size: 12px;
+    border: 1px solid var(--tav-border);
+    border-radius: 999px;
+    background: #fff;
+    cursor: pointer;
+    color: var(--tav-text-secondary);
     transition: all .15s ease;
 }
-.tav-chart-btn:hover { border-color:#269EB2; color:#269EB2; }
-.tav-chart-btn.tav-chart-active {
-    background:#269EB2; color:#fff;
-    border-color:#269EB2; font-weight:600;
+
+.tav-chart-btn:hover {
+    border-color: #269EB2;
+    color: #269EB2;
 }
-.tav-revenue-chart-panel canvas { max-height:280px; }
+
+.tav-chart-btn.tav-chart-active {
+    background: #269EB2;
+    color: #fff;
+    border-color: #269EB2;
+    font-weight: 600;
+}
+
+.tav-revenue-chart-panel canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.tav-panel-header--row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 8px;
+}
+
+.tav-panel-header--row h3,
+.tav-panel-header--row .tav-panel-title {
+    margin: 0;
+}
+
+.tav-fulfillment-center {
+    padding: 20px 24px 24px;
+}
+
+.tav-fulfillment-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 0 0 16px;
+}
+
+.tav-fulfillment-heading h3 {
+    margin: 0 0 4px;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--tav-text-primary);
+}
+
+.tav-fulfillment-subtitle {
+    margin: 0;
+    font-size: 13px;
+    color: var(--tav-text-muted);
+    line-height: 1.4;
+}
+
+.tav-fulfillment-header .tav-panel-link {
+    flex-shrink: 0;
+    white-space: nowrap;
+    line-height: 1.6;
+}
+
+.tav-fulfillment-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.tav-fulfillment-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 20px;
+    background: #f6f7f8;
+    border: 1px solid #eceef0;
+    border-radius: 12px;
+    transition: border-color .15s ease, background .15s ease;
+}
+
+.tav-fulfillment-item:hover {
+    background: #f1f3f5;
+    border-color: #dfe3e6;
+}
+
+.tav-fulfillment-info {
+    min-width: 0;
+}
+
+.tav-fulfillment-title {
+    margin: 0 0 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--tav-text-primary);
+}
+
+.tav-fulfillment-meta {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--tav-text-muted);
+}
+
+.tav-fulfillment-pill {
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .2px;
+    text-transform: lowercase;
+    color: var(--pill-fg, #475569);
+    background: var(--pill-bg, #f1f5f9);
+}
+
+.tav-fulfillment-view-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 9px 22px;
+    border: none;
+    border-radius: 999px;
+    background: #269EB2;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background .15s ease;
+}
+
+.tav-fulfillment-view-btn:hover,
+.tav-fulfillment-view-btn:focus {
+    background: #1f8497;
+    color: #fff;
+}
+
+.tav-activity-panel,
+.tav-storytellers-panel {
+    overflow: hidden;
+}
+
+.tav-activity-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.tav-activity-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--tav-border);
+}
+
+.tav-activity-item:last-child {
+    border-bottom: none;
+}
+
+.tav-activity-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    margin-top: 6px;
+    flex-shrink: 0;
+}
+
+.tav-activity-label {
+    margin: 0 0 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--tav-text-primary);
+    line-height: 1.4;
+}
+
+.tav-activity-time {
+    margin: 0;
+    font-size: 12px;
+    color: var(--tav-text-muted);
+}
+
+.tav-panel-list--compact li {
+    padding: 12px 20px;
+}
+
+.tav-st-name a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.tav-st-name a:hover {
+    color: #269EB2;
+}
+
+@media (max-width: 1200px) {
+    .tav-dashboard-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .tav-stats-grid--compact {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .tav-chart-header {
+        flex-direction: column;
+    }
+
+    .tav-chart-filters {
+        justify-content: flex-start;
+    }
+}

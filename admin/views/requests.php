@@ -16,6 +16,22 @@ if (!empty($_GET['tav_set_complete'])) {
     }
 }
 
+// Start Matching: paid/in_vetting → matching (client sees "Sourcing Storytellers").
+if (!empty($_GET['tav_start_matching'])) {
+    $match_id = (int) $_GET['tav_start_matching'];
+    if ($match_id && wp_verify_nonce($_GET['_wpnonce'] ?? '', 'tav_match_' . $match_id)) {
+        $cur = get_post_meta($match_id, 'status', true);
+        if (in_array($cur, ['paid', 'in_vetting'], true)) {
+            update_post_meta($match_id, 'status', 'matching');
+            if (function_exists('update_field')) {
+                update_field('status', 'matching', $match_id);
+            }
+            clean_post_cache($match_id);
+            echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Request moved to Matching — client will see sourcing in progress.', 'the-admin-vault') . '</p></div>';
+        }
+    }
+}
+
 // Handle bulk actions.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['tav_bulk_action']) && !empty($_POST['tav_bulk_ids']) && isset($_POST['tav_bulk_nonce']) && wp_verify_nonce($_POST['tav_bulk_nonce'], 'tav_bulk_requests')) {
     $bulk_action = sanitize_text_field($_POST['tav_bulk_action']);
@@ -45,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['tav_bulk_action']) &
 }
 
 if (isset($_GET['notified']) && $_GET['notified'] == '1') {
-    echo '<div class="notice notice-success is-dismissible"><p>' . __('Storytellers assigned and client notified!', 'the-admin-vault') . '</p></div>';
+    echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Storytellers assigned. Status updated to Ready to Review and the client has been notified by email.', 'the-admin-vault') . '</p></div>';
 }
 if (isset($_GET['error']) && $_GET['error'] === 'not_paid') {
     echo '<div class="notice notice-error is-dismissible"><p>' . __('Cannot fulfill: this request has not been paid yet.', 'the-admin-vault') . '</p></div>';
@@ -319,6 +335,17 @@ $filter_statuses = [
                         <td><span class="tav-cell-secondary"><?php echo esc_html($tier ? ucfirst($tier) : '—'); ?></span></td>
                         <td class="actions">
                             <div class="tav-actions-wrap">
+                                <?php if (in_array($status, ['paid', 'in_vetting'], true)): ?>
+                                    <a href="<?php echo esc_url(wp_nonce_url(
+                                        admin_url('admin.php?page=' . $current_page_slug . '&view=requests&tav_start_matching=' . $req_id),
+                                        'tav_match_' . $req_id
+                                    )); ?>"
+                                       class="tav-btn-icon"
+                                       title="<?php esc_attr_e('Start Matching', 'the-admin-vault'); ?>"
+                                       aria-label="<?php esc_attr_e('Start Matching', 'the-admin-vault'); ?>">
+                                        <span class="dashicons dashicons-search"></span>
+                                    </a>
+                                <?php endif; ?>
                                 <?php if (in_array($status, ['paid', 'in_vetting', 'matching', 'ready_review'], true)): ?>
                                     <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=fulfill&request_id=' . $req_id)); ?>" 
                                        class="tav-btn-icon-primary" 
