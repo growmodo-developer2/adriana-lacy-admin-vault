@@ -83,6 +83,12 @@ $preview_reset_url   = site_url('/wp-login.php?action=rp');
 /* ── Tab chrome ─────────────────────────────────────────────────── */
 .tav-tabs-wrap      { margin-top: 24px; }
 .tav-tab-list       { display: flex; border-bottom: 2px solid #e2e8f0; margin: 0; padding: 0; gap: 4px; list-style: none; flex-wrap: wrap; }
+@media (max-width: 768px) {
+    .tav-tab-list { flex-direction: column; gap: 0; border-bottom: none; }
+    .tav-tab-btn { width: 100%; border-radius: 0; text-align: left; border-bottom: 1px solid #e2e8f0; }
+    .tav-tab-btn:first-child { border-radius: 6px 6px 0 0; }
+    .tav-tab-btn.tav-active { bottom: 0; border-bottom-color: #e2e8f0; }
+}
 .tav-tab-btn        { padding: 10px 22px; background: #f8fafc; border: 1px solid #e2e8f0; border-bottom: none; border-radius: 6px 6px 0 0; font-size: 14px; cursor: pointer; color: #64748b; font-weight: 500; transition: background .12s, color .12s; white-space: nowrap; }
 .tav-tab-btn:hover  { background: #f1f5f9; color: #1e293b; }
 .tav-tab-btn.tav-active { background: #fff; color: #1e293b; font-weight: 600; border-color: #e2e8f0; border-bottom-color: #fff; position: relative; bottom: -2px; z-index: 1; }
@@ -133,13 +139,13 @@ $preview_reset_url   = site_url('/wp-login.php?action=rp');
         <h2 class="tav-panel-title"><?php esc_html_e('Settings', 'the-admin-vault'); ?></h2>
     </div>
 
-    <div class="tav-form-panel" style="padding: 20px;">
+    <div class="tav-form-panel tav-settings-form-panel">
         <form method="POST">
             <?php wp_nonce_field('tav_save_settings', 'tav_settings_nonce'); ?>
 
             <!-- ── Niche Management ─────────────────────────────── -->
-            <h3 style="margin-top:0;"><?php esc_html_e('Niche Management', 'the-admin-vault'); ?></h3>
-            <p class="description" style="margin-bottom:15px;"><?php esc_html_e('Manage the list of niches available for storytellers.', 'the-admin-vault'); ?></p>
+            <h3 class="tav-settings-section-title"><?php esc_html_e('Niche Management', 'the-admin-vault'); ?></h3>
+            <p class="description tav-settings-section-desc"><?php esc_html_e('Manage the list of niches available for storytellers.', 'the-admin-vault'); ?></p>
 
             <table class="form-table" role="presentation">
                 <tr>
@@ -154,10 +160,10 @@ $preview_reset_url   = site_url('/wp-login.php?action=rp');
                 </tr>
             </table>
 
-            <hr style="margin: 28px 0;">
+            <hr class="tav-settings-divider">
 
             <!-- ── Email Templates (tabbed) ──────────────────────── -->
-            <h3 style="margin: 0 0 6px;"><?php esc_html_e('Email Templates', 'the-admin-vault'); ?></h3>
+            <h3 class="tav-settings-section-title tav-no-margin-top"><?php esc_html_e('Email Templates', 'the-admin-vault'); ?></h3>
             <p class="description"><?php esc_html_e('Customise the transactional emails sent to clients. Placeholders are replaced automatically when each email is dispatched.', 'the-admin-vault'); ?></p>
 
             <div class="tav-tabs-wrap">

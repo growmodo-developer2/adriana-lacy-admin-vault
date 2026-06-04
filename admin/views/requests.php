@@ -68,10 +68,10 @@ if (isset($_GET['error']) && $_GET['error'] === 'not_paid') {
 }
 ?>
 
-<div class="tav-page-header">
-    <h1 class="tav-page-title"><?php esc_html_e('Search Requests', 'the-admin-vault'); ?></h1>
-    <div class="tav-header-actions">
-        <p class="tav-page-subtitle"><?php esc_html_e('Manage client search requests', 'the-admin-vault'); ?></p>
+<div class="tav-page-header tav-requests-header">
+    <div class="tav-requests-header-left">
+        <h1 class="tav-page-title"><?php esc_html_e('Search Requests Management', 'the-admin-vault'); ?></h1>
+        <p class="tav-page-subtitle"><?php esc_html_e('Manage and track all client storyteller search requests', 'the-admin-vault'); ?></p>
     </div>
 </div>
 
@@ -81,6 +81,7 @@ $date_from      = sanitize_text_field($_GET['date_from'] ?? '');
 $date_to        = sanitize_text_field($_GET['date_to']   ?? '');
 $selected_client = (int)($_GET['client_id'] ?? 0);
 $selected_niche  = sanitize_text_field($_GET['niche'] ?? '');
+$search_query   = isset($_GET['req_search']) ? sanitize_text_field($_GET['req_search']) : '';
 $filter_statuses = [
     ''                => __('All Statuses', 'the-admin-vault'),
     'pending_payment' => __('Payment Pending', 'the-admin-vault'),
@@ -92,96 +93,134 @@ $filter_statuses = [
     'archived'        => __('Archived', 'the-admin-vault'),
 ];
 ?>
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
-    <form method="GET" style="display:flex; gap:8px; align-items:center; margin:0; flex-wrap:wrap;">
+<!-- Search and Filters Bar -->
+<div class="tav-requests-toolbar">
+    <form method="GET" class="tav-requests-search-form">
         <input type="hidden" name="page" value="<?php echo esc_attr($current_page_slug); ?>">
         <input type="hidden" name="view" value="requests">
-        <select name="status_filter" style="padding:6px 10px; border-radius:4px; border:1px solid #ccc;">
-            <?php foreach ($filter_statuses as $val => $label): ?>
-                <option value="<?php echo esc_attr($val); ?>" <?php selected($status_filter, $val); ?>><?php echo esc_html($label); ?></option>
-            <?php endforeach; ?>
-        </select>
-        <?php
-        $client_users = get_users([
-            'role__in'   => ['um_client', 'client'],
-            'orderby'    => 'display_name',
-            'order'      => 'ASC',
-            'fields'     => ['ID', 'display_name'],
-        ]);
-        ?>
-        <select name="client_id" style="padding:6px 10px; border-radius:4px; border:1px solid #ccc; min-width:140px;">
-            <option value=""><?php esc_html_e('All Clients', 'the-admin-vault'); ?></option>
-            <?php foreach ($client_users as $u): ?>
-                <option value="<?php echo (int)$u->ID; ?>" <?php selected($selected_client, $u->ID); ?>>
-                    <?php echo esc_html($u->display_name); ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-        <?php $niches = tav_get_niches(); ?>
-        <select name="niche" style="padding:6px 10px; border-radius:4px; border:1px solid #ccc; min-width:120px;">
-            <option value=""><?php esc_html_e('All Niches', 'the-admin-vault'); ?></option>
-            <?php foreach ($niches as $niche_slug => $niche_name): ?>
-                <option value="<?php echo esc_attr($niche_slug); ?>" <?php selected($selected_niche, $niche_slug); ?>>
-                    <?php echo esc_html($niche_name); ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-        <label for="date_from" style="font-size:13px;"><?php esc_html_e('From', 'the-admin-vault'); ?></label>
-        <input type="date" id="date_from" name="date_from"
-            value="<?php echo esc_attr($date_from); ?>"
-            style="padding:6px 8px; border:1px solid #ddd; border-radius:4px; font-size:13px;">
-        <label for="date_to" style="font-size:13px;"><?php esc_html_e('To', 'the-admin-vault'); ?></label>
-        <input type="date" id="date_to" name="date_to"
-            value="<?php echo esc_attr($date_to); ?>"
-            style="padding:6px 8px; border:1px solid #ddd; border-radius:4px; font-size:13px;">
-        <button type="submit" class="button button-secondary"><?php esc_html_e('Filter', 'the-admin-vault'); ?></button>
-        <?php if ($status_filter || $selected_client || $selected_niche || $date_from || $date_to): ?>
-            <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=requests')); ?>" class="button"><?php esc_html_e('Clear', 'the-admin-vault'); ?></a>
-        <?php endif; ?>
+        <?php if ($status_filter): ?><input type="hidden" name="status_filter" value="<?php echo esc_attr($status_filter); ?>"><?php endif; ?>
+        <?php if ($selected_client): ?><input type="hidden" name="client_id" value="<?php echo esc_attr($selected_client); ?>"><?php endif; ?>
+        <?php if ($selected_niche): ?><input type="hidden" name="niche" value="<?php echo esc_attr($selected_niche); ?>"><?php endif; ?>
+        <div class="tav-search-input-wrap">
+            <svg class="tav-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            <input type="text" name="req_search" value="<?php echo esc_attr($search_query); ?>" placeholder="<?php esc_attr_e('Search', 'the-admin-vault'); ?>" class="tav-requests-search">
+        </div>
     </form>
+    
+    <button type="button" class="tav-filters-toggle" id="tav-toggle-filters">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+        </svg>
+        <?php esc_html_e('Filters', 'the-admin-vault'); ?>
+    </button>
+</div>
 
-    <div style="display:flex; gap:8px; align-items:center;" id="tav-bulk-bar">
-        <select name="tav_bulk_action" form="tav-bulk-form" style="padding:6px 10px; border-radius:4px; border:1px solid #ccc;">
-            <option value=""><?php esc_html_e('Bulk Actions', 'the-admin-vault'); ?></option>
-            <option value="complete"><?php esc_html_e('Mark Complete', 'the-admin-vault'); ?></option>
-            <option value="archive"><?php esc_html_e('Archive', 'the-admin-vault'); ?></option>
-        </select>
-        <button type="submit" form="tav-bulk-form" class="button button-secondary"><?php esc_html_e('Apply', 'the-admin-vault'); ?></button>
-    </div>
+<!-- Collapsible Advanced Filters -->
+<div class="tav-advanced-filters" id="tav-advanced-filters" style="display: none;">
+    <form method="GET" class="tav-filters-form">
+        <input type="hidden" name="page" value="<?php echo esc_attr($current_page_slug); ?>">
+        <input type="hidden" name="view" value="requests">
+        <?php if ($search_query): ?><input type="hidden" name="req_search" value="<?php echo esc_attr($search_query); ?>"><?php endif; ?>
+        
+        <div class="tav-filter-group">
+            <label><?php esc_html_e('Status', 'the-admin-vault'); ?></label>
+            <select name="status_filter">
+                <?php foreach ($filter_statuses as $val => $label): ?>
+                    <option value="<?php echo esc_attr($val); ?>" <?php selected($status_filter, $val); ?>><?php echo esc_html($label); ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        
+        <div class="tav-filter-group">
+            <label><?php esc_html_e('Client', 'the-admin-vault'); ?></label>
+            <?php
+            $client_users = get_users([
+                'role__in'   => ['um_client', 'client'],
+                'orderby'    => 'display_name',
+                'order'      => 'ASC',
+                'fields'     => ['ID', 'display_name'],
+            ]);
+            ?>
+            <select name="client_id">
+                <option value=""><?php esc_html_e('All Clients', 'the-admin-vault'); ?></option>
+                <?php foreach ($client_users as $u): ?>
+                    <option value="<?php echo (int)$u->ID; ?>" <?php selected($selected_client, $u->ID); ?>>
+                        <?php echo esc_html($u->display_name); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        
+        <div class="tav-filter-group">
+            <label><?php esc_html_e('Niche', 'the-admin-vault'); ?></label>
+            <?php $niches = tav_get_niches(); ?>
+            <select name="niche">
+                <option value=""><?php esc_html_e('All Niches', 'the-admin-vault'); ?></option>
+                <?php foreach ($niches as $niche_slug => $niche_name): ?>
+                    <option value="<?php echo esc_attr($niche_slug); ?>" <?php selected($selected_niche, $niche_slug); ?>>
+                        <?php echo esc_html($niche_name); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        
+        <div class="tav-filter-group">
+            <label><?php esc_html_e('Date Range', 'the-admin-vault'); ?></label>
+            <div class="tav-date-range">
+                <input type="date" name="date_from" value="<?php echo esc_attr($date_from); ?>" placeholder="<?php esc_attr_e('From', 'the-admin-vault'); ?>">
+                <span>-</span>
+                <input type="date" name="date_to" value="<?php echo esc_attr($date_to); ?>" placeholder="<?php esc_attr_e('To', 'the-admin-vault'); ?>">
+            </div>
+        </div>
+        
+        <div class="tav-filter-actions">
+            <button type="submit" class="tav-btn-filter"><?php esc_html_e('Apply Filters', 'the-admin-vault'); ?></button>
+            <?php if ($status_filter || $selected_client || $selected_niche || $date_from || $date_to): ?>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=requests' . ($search_query ? '&req_search=' . urlencode($search_query) : ''))); ?>" class="tav-btn-clear"><?php esc_html_e('Clear', 'the-admin-vault'); ?></a>
+            <?php endif; ?>
+        </div>
+    </form>
 </div>
 
 <form method="POST" id="tav-bulk-form">
 <?php wp_nonce_field('tav_bulk_requests', 'tav_bulk_nonce'); ?>
 
-<div class="tav-boutique-table-wrap">
-    <table class="tav-boutique-table">
+<div class="tav-boutique-table-wrap tav-requests-table-wrap">
+    <table class="tav-boutique-table tav-requests-table">
         <thead>
             <tr>
-                <th style="width:30px;"><input type="checkbox" id="tav-select-all"></th>
-                <th><?php esc_html_e('PROJECT / CLIENT', 'the-admin-vault'); ?></th>
-                <th><?php esc_html_e('STATUS', 'the-admin-vault'); ?></th>
-                <th><?php esc_html_e('NICHE', 'the-admin-vault'); ?></th>
-                <th><?php esc_html_e('DATES', 'the-admin-vault'); ?></th>
-                <th><?php esc_html_e('SELECTION', 'the-admin-vault'); ?></th>
-                <th><?php esc_html_e('TIER', 'the-admin-vault'); ?></th>
-                <th class="actions"><span class="dashicons dashicons-ellipsis" title="<?php esc_attr_e('Actions', 'the-admin-vault'); ?>"></span></th>
+                <th class="tav-col-project"><?php esc_html_e('Project Name', 'the-admin-vault'); ?> <span class="tav-sort-icon">&#8597;</span></th>
+                <th class="tav-col-client"><?php esc_html_e('Client', 'the-admin-vault'); ?> <span class="tav-sort-icon">&#8597;</span></th>
+                <th class="tav-col-status"><?php esc_html_e('Status', 'the-admin-vault'); ?> <span class="tav-sort-icon">&#8597;</span></th>
+                <th class="tav-col-submitted"><?php esc_html_e('Date Submitted', 'the-admin-vault'); ?> <span class="tav-sort-icon">&#8597;</span></th>
+                <th class="tav-col-due"><?php esc_html_e('Date Due', 'the-admin-vault'); ?> <span class="tav-sort-icon">&#8597;</span></th>
+                <th class="tav-col-actions"><?php esc_html_e('Actions', 'the-admin-vault'); ?></th>
             </tr>
         </thead>
         <tbody>
             <?php
             global $wpdb;
             $paged = max(1, (int)($_GET['paged'] ?? 1));
+            $posts_per_page = 10;
             $request_cpt = 'request'; 
             $client_filter = isset($_GET['client_id']) ? (int)$_GET['client_id'] : 0;
             
             $query_args = [
                 'post_type' => $request_cpt,
                 'post_status' => 'any',
-                'posts_per_page' => 20,
+                'posts_per_page' => $posts_per_page,
                 'paged' => $paged,
                 'orderby' => 'date',
                 'order' => 'DESC',
             ];
+
+            // Search filter
+            if (!empty($search_query)) {
+                $query_args['s'] = $search_query;
+            }
 
             // Client filter (from dropdown; also accepts legacy URL param from clients view)
             $active_client = $selected_client ?: $client_filter;
@@ -218,10 +257,6 @@ $filter_statuses = [
 
             // Custom sorting: Paid requests first, then by date
             $sort_by_paid = function($orderby) use ($wpdb) {
-                // We need to join postmeta to access 'status'
-                // WP_Query will join postmeta if we use a meta query or meta_key,
-                // but since we removed the meta query, we should ensure the join or use a simpler approach.
-                // However, we can use a meta query just for the join without filtering.
                 return "CASE WHEN {$wpdb->postmeta}.meta_value = 'paid' THEN 0 ELSE 1 END ASC, {$wpdb->posts}.post_date DESC";
             };
 
@@ -229,35 +264,60 @@ $filter_statuses = [
                 'relation' => 'AND',
                 [
                     'key' => 'status',
-                    'compare' => 'EXISTS', // Just to ensure the join
+                    'compare' => 'EXISTS',
                 ]
             ];
 
             add_filter('posts_orderby', $sort_by_paid);
             $req_query = new WP_Query($query_args);
             remove_filter('posts_orderby', $sort_by_paid);
+            
+            $total_items = $req_query->found_posts;
+            $total_pages = $req_query->max_num_pages;
 
             if ($req_query->have_posts()):
                 while ($req_query->have_posts()): $req_query->the_post();
                     $req_id = get_the_ID();
                     
+                    // Project Name: Try to find it from available data
+                    $post_obj = get_post($req_id);
+                    $project_name = $post_obj->post_title ?? '';
+                    $name_not_available = false;
+                    $project_name_full = ''; // Store full text for tooltip
+                    
+                    // If title is empty or generic, try to use campaign_goal from project_brief
+                    if (empty(trim($project_name)) || $project_name === 'Auto Draft') {
+                        // Try project_brief group field first (nested structure)
+                        $project_brief = get_field('project_brief', $req_id);
+                        $campaign_goal = '';
+                        
+                        if (is_array($project_brief) && !empty($project_brief['campaign_goal'])) {
+                            $campaign_goal = $project_brief['campaign_goal'];
+                        } else {
+                            // Fallback: try direct campaign_goal field
+                            $campaign_goal = get_field('campaign_goal', $req_id);
+                        }
+                        
+                        if (!empty($campaign_goal)) {
+                            $project_name_full = $campaign_goal;
+                            $project_name = $campaign_goal; // CSS will handle truncation
+                        } else {
+                            $project_name = __('Name not available', 'the-admin-vault');
+                            $name_not_available = true;
+                        }
+                    }
+                    
                     // Client: Post Author
                     $author_id = get_the_author_meta('ID');
-                    $client_name = get_the_author_meta('display_name') ?: 'Unknown'; // Or use 'user_nicename'
+                    $client_name = get_the_author_meta('display_name') ?: 'Unknown';
 
                     // Status: 'status' meta (ACF)
                     $status = get_field('status') ?: 'pending';
                     
                     // Dates
-                    $date_submitted = get_the_date('M j, Y');
-                    $due_date = ''; // Not in meta yet, verified.
-                    
-                    // Tier
-                    $tier = get_field('package_tier');
-
-                    // Niche: Taxonomy
-                    $req_niches = wp_get_post_terms($req_id, 'vs_niche', ['fields' => 'names']);
-                    $niche_display = !empty($req_niches) ? implode(', ', $req_niches) : '—';
+                    $date_submitted = get_the_date('Y-m-d');
+                    $due_date_raw = get_post_meta($req_id, 'due_date', true);
+                    $due_date = !empty($due_date_raw) ? date('Y-m-d', strtotime($due_date_raw)) : '—';
                     
                     // Custom Logic for auto assigned status
                     $client_selected = get_field('client_selected_storytellers', $req_id) ?: get_post_meta($req_id, 'client_selected_storytellers', true);
@@ -265,139 +325,133 @@ $filter_statuses = [
                         $status = 'assigned';
                     }
 
-                    $status_labels = [
-                        'pending_payment' => __('Payment Pending', 'the-admin-vault'),
-                        'pending'         => __('Pending',         'the-admin-vault'),
-                        'paid'            => __('Paid',            'the-admin-vault'),
-                        'in_vetting'      => __('In Vetting',      'the-admin-vault'),
-                        'matching'        => __('Matching',        'the-admin-vault'),
-                        'ready_review'    => __('Ready to Review', 'the-admin-vault'),
-                        'assigned'        => __('Assigned',        'the-admin-vault'),
-                        'completed'       => __('Completed',       'the-admin-vault'),
-                        'archived'        => __('Archived',        'the-admin-vault'),
-                        'enterprise_inquiry' => __('Enterprise Inquiry', 'the-admin-vault'),
+                    // Map each status to unique label and class
+                    $status_config = [
+                        'pending_payment' => ['label' => 'Awaiting Payment', 'class' => 'tav-status-pending-payment'],
+                        'pending'         => ['label' => 'Pending', 'class' => 'tav-status-pending'],
+                        'paid'            => ['label' => 'Paid', 'class' => 'tav-status-paid'],
+                        'in_vetting'      => ['label' => 'In Vetting', 'class' => 'tav-status-vetting'],
+                        'matching'        => ['label' => 'Matching', 'class' => 'tav-status-matching'],
+                        'ready_review'    => ['label' => 'Ready for Review', 'class' => 'tav-status-ready-review'],
+                        'assigned'        => ['label' => 'Assigned', 'class' => 'tav-status-assigned'],
+                        'completed'       => ['label' => 'Completed', 'class' => 'tav-status-completed'],
+                        'archived'        => ['label' => 'Archived', 'class' => 'tav-status-archived'],
                     ];
-                    $status_label = $status_labels[$status] ?? ucwords(str_replace('_', ' ', $status));
-
-                    // Selection column display
-                    $selection_display = '—';
-                    if (!empty($client_selected)) {
-                        $selected_arr = is_array($client_selected) ? $client_selected : [$client_selected];
-                        $names = [];
-                        foreach ($selected_arr as $st) {
-                            if (is_object($st)) {
-                                $names[] = $st->post_title;
-                            } else {
-                                $names[] = get_the_title($st);
-                            }
-                        }
-                        $selection_display = implode(', ', $names);
-                    } else {
-                        $admin_assigned = get_field('storytellers', $req_id) ?: get_post_meta($req_id, 'storytellers', true) ?: (get_post_meta($req_id, 'assigned_storytellers', true) ?: []);
-                        $count = is_array($admin_assigned) ? count($admin_assigned) : 0;
-                        $selection_display = $count ? $count : '—';
-                    }
-
-                    // Dynamic row class for status colour-coding.
-                    $status_class_map = [
-                        'pending_payment' => 'status-pending-payment',
-                        'paid'            => 'status-paid',
-                        'in_vetting'      => 'status-in-vetting',
-                        'matching'        => 'status-matching',
-                        'ready_review'    => 'status-ready-review',
-                        'assigned'        => 'status-assigned',
-                        'completed'       => 'status-completed',
-                        'archived'        => 'status-archived',
-                    ];
-                    $status_class = $status_class_map[$status] ?? 'status-default';
+                    $status_info = $status_config[$status] ?? ['label' => ucwords(str_replace('_', ' ', $status)), 'class' => 'tav-status-pending'];
             ?>
-                    <tr class="<?php echo esc_attr($status_class); ?>">
-                        <td><input type="checkbox" name="tav_bulk_ids[]" value="<?php echo esc_attr($req_id); ?>"></td>
-                        <td>
-                            <div class="tav-cell-name">
-                                <span class="tav-name-text"><?php echo esc_html(get_the_title()); ?></span>
-                                <span class="tav-cell-secondary" style="display:block; font-size:12px;"><?php echo esc_html($client_name); ?></span>
+                    <tr>
+                        <td class="tav-col-project">
+                            <div class="tav-project-cell">
+                                <span class="tav-project-indicator"></span>
+                                <span class="tav-project-name <?php echo $name_not_available ? 'tav-project-name--unavailable' : ''; ?>" 
+                                      <?php if (!empty($project_name_full)): ?>title="<?php echo esc_attr($project_name_full); ?>"<?php endif; ?>>
+                                    <?php echo esc_html($project_name); ?>
+                                </span>
                             </div>
                         </td>
-                        <td><span class="tav-pill"><?php echo esc_html($status_label); ?></span></td>
-                        <td><span class="tav-cell-secondary"><?php echo esc_html($niche_display); ?></span></td>
-                        <td>
-                            <?php
-                                $due_date = get_post_meta($req_id, 'due_date', true);
-                                $due_display = !empty($due_date) ? date_i18n('M j, Y', strtotime($due_date)) : '—';
-                            ?>
-                            <div style="font-size:13px;">
-                                <div><strong>Submitted:</strong> <?php echo esc_html($date_submitted); ?></div>
-                                <div><strong>Due:</strong> <?php echo esc_html($due_display); ?></div>
-                            </div>
+                        <td class="tav-col-client"><?php echo esc_html($client_name); ?></td>
+                        <td class="tav-col-status">
+                            <span class="tav-status-badge <?php echo esc_attr($status_info['class']); ?>">
+                                <span class="tav-status-dot"></span>
+                                <?php echo esc_html($status_info['label']); ?>
+                            </span>
                         </td>
-                        <td><span class="tav-cell-primary" style="font-size: 13px; line-height: 1.4; display: block; max-width: 200px;"><?php echo $selection_display; ?></span></td>
-                        <td><span class="tav-cell-secondary"><?php echo esc_html($tier ? ucfirst($tier) : '—'); ?></span></td>
-                        <td class="actions">
-                            <div class="tav-actions-wrap">
-                                <?php if (in_array($status, ['paid', 'in_vetting'], true)): ?>
-                                    <a href="<?php echo esc_url(wp_nonce_url(
-                                        admin_url('admin.php?page=' . $current_page_slug . '&view=requests&tav_start_matching=' . $req_id),
-                                        'tav_match_' . $req_id
-                                    )); ?>"
-                                       class="tav-btn-icon"
-                                       title="<?php esc_attr_e('Start Matching', 'the-admin-vault'); ?>"
-                                       aria-label="<?php esc_attr_e('Start Matching', 'the-admin-vault'); ?>">
-                                        <span class="dashicons dashicons-search"></span>
-                                    </a>
-                                <?php endif; ?>
-                                <?php if (in_array($status, ['paid', 'in_vetting', 'matching', 'ready_review'], true)): ?>
-                                    <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=fulfill&request_id=' . $req_id)); ?>" 
-                                       class="tav-btn-icon-primary" 
-                                       title="<?php esc_attr_e('Fulfill Request', 'the-admin-vault'); ?>"
-                                       aria-label="<?php esc_attr_e('Fulfill Request', 'the-admin-vault'); ?>">
-                                        <span class="dashicons dashicons-share-alt2"></span>
-                                    </a>
-                                <?php endif; ?>
-                                <?php if (in_array($status, ['pending_payment', 'in_vetting', 'matching', 'ready_review'], true)): ?>
+                        <td class="tav-col-submitted"><?php echo esc_html($date_submitted); ?></td>
+                        <td class="tav-col-due"><?php echo esc_html($due_date); ?></td>
+                        <td class="tav-col-actions">
+                            <div class="tav-action-buttons">
+                                <?php if ($name_not_available): ?>
                                     <button type="button"
-                                            class="tav-btn-icon tav-open-request-modal"
-                                            data-modal="tav-brief-modal-<?php echo esc_attr($req_id); ?>"
-                                            title="<?php esc_attr_e('View Brief', 'the-admin-vault'); ?>"
-                                            aria-label="<?php esc_attr_e('View Brief', 'the-admin-vault'); ?>">
-                                        <span class="dashicons dashicons-visibility"></span>
+                                            class="tav-action-btn tav-action-debug tav-open-request-modal"
+                                            data-modal="tav-debug-modal-<?php echo esc_attr($req_id); ?>">
+                                        <?php esc_html_e('View Details', 'the-admin-vault'); ?>
                                     </button>
                                 <?php endif; ?>
-                                <?php if ($status === 'assigned'): ?>
-                                    <button type="button"
-                                            class="tav-btn tav-btn-primary tav-open-request-modal"
-                                            data-modal="tav-req-modal-<?php echo esc_attr($req_id); ?>"
-                                            style="white-space:nowrap; border:none; cursor:pointer; padding:6px 12px; border-radius:6px; font-size:12px; font-weight:600;">
-                                        <?php esc_html_e('View Match', 'the-admin-vault'); ?>
-                                    </button>
-                                    <button type="button"
-                                            class="tav-btn-icon tav-open-request-modal"
-                                            data-modal="tav-req-modal-<?php echo esc_attr($req_id); ?>"
-                                            title="<?php esc_attr_e('View Brief', 'the-admin-vault'); ?>"
-                                            aria-label="<?php esc_attr_e('View Brief', 'the-admin-vault'); ?>">
-                                        <span class="dashicons dashicons-visibility"></span>
-                                    </button>
-                                    <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?page=' . $current_page_slug . '&view=requests&tav_set_complete=' . $req_id), 'tav_complete_' . $req_id)); ?>"
-                                       class="tav-btn-icon"
-                                       title="<?php esc_attr_e('Mark Complete', 'the-admin-vault'); ?>"
-                                       aria-label="<?php esc_attr_e('Mark Complete', 'the-admin-vault'); ?>"
-                                       onclick="return confirm('<?php esc_attr_e('Mark this request as completed?', 'the-admin-vault'); ?>');">
-                                        <span class="dashicons dashicons-yes-alt"></span>
-                                    </a>
-                                <?php endif; ?>
-                                <?php if ($status === 'completed'): ?>
-                                    <button type="button"
-                                            class="tav-btn-icon tav-open-request-modal"
-                                            data-modal="tav-brief-modal-<?php echo esc_attr($req_id); ?>"
-                                            title="<?php esc_attr_e('View Details', 'the-admin-vault'); ?>"
-                                            aria-label="<?php esc_attr_e('View Details', 'the-admin-vault'); ?>">
-                                        <span class="dashicons dashicons-visibility"></span>
-                                        <span><?php esc_html_e('View Details', 'the-admin-vault'); ?></span>
-                                    </button>
-                                <?php endif; ?>
-                                <?php if ($status === 'archived'): ?>
-                                    <span class="tav-cell-secondary"><?php esc_html_e('Archived', 'the-admin-vault'); ?></span>
-                                <?php endif; ?>
+                                
+                                <?php 
+                                // Status-specific action buttons
+                                switch ($status):
+                                    case 'pending_payment': ?>
+                                        <button type="button"
+                                                class="tav-action-btn tav-action-view-brief tav-open-request-modal"
+                                                data-modal="tav-brief-modal-<?php echo esc_attr($req_id); ?>">
+                                            <?php esc_html_e('View Brief', 'the-admin-vault'); ?>
+                                        </button>
+                                    <?php break;
+                                    
+                                    case 'pending': ?>
+                                        <button type="button"
+                                                class="tav-action-btn tav-action-view-brief tav-open-request-modal"
+                                                data-modal="tav-brief-modal-<?php echo esc_attr($req_id); ?>">
+                                            <?php esc_html_e('View Brief', 'the-admin-vault'); ?>
+                                        </button>
+                                    <?php break;
+                                    
+                                    case 'paid': ?>
+                                        <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=fulfill&request_id=' . $req_id)); ?>" 
+                                           class="tav-action-btn tav-action-start-matching">
+                                            <?php esc_html_e('Start Matching', 'the-admin-vault'); ?>
+                                        </a>
+                                    <?php break;
+                                    
+                                    case 'in_vetting': ?>
+                                        <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=fulfill&request_id=' . $req_id)); ?>" 
+                                           class="tav-action-btn tav-action-continue-vetting">
+                                            <?php esc_html_e('Continue Vetting', 'the-admin-vault'); ?>
+                                        </a>
+                                    <?php break;
+                                    
+                                    case 'matching': ?>
+                                        <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=fulfill&request_id=' . $req_id)); ?>" 
+                                           class="tav-action-btn tav-action-assign">
+                                            <?php esc_html_e('Assign Storytellers', 'the-admin-vault'); ?>
+                                        </a>
+                                    <?php break;
+                                    
+                                    case 'ready_review': ?>
+                                        <button type="button"
+                                                class="tav-action-btn tav-action-awaiting tav-open-request-modal"
+                                                data-modal="tav-brief-modal-<?php echo esc_attr($req_id); ?>">
+                                            <?php esc_html_e('Awaiting Client', 'the-admin-vault'); ?>
+                                        </button>
+                                    <?php break;
+                                    
+                                    case 'assigned': ?>
+                                        <button type="button"
+                                                class="tav-action-btn tav-action-view-match tav-open-request-modal"
+                                                data-modal="tav-req-modal-<?php echo esc_attr($req_id); ?>">
+                                            <?php esc_html_e('View Selection', 'the-admin-vault'); ?>
+                                        </button>
+                                        <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?page=' . $current_page_slug . '&view=requests&tav_set_complete=' . $req_id), 'tav_complete_' . $req_id)); ?>" 
+                                           class="tav-action-btn tav-action-complete"
+                                           onclick="return confirm('<?php esc_attr_e('Mark this request as completed?', 'the-admin-vault'); ?>');">
+                                            <?php esc_html_e('Mark Complete', 'the-admin-vault'); ?>
+                                        </a>
+                                    <?php break;
+                                    
+                                    case 'completed': ?>
+                                        <button type="button"
+                                                class="tav-action-btn tav-action-view-report tav-open-request-modal"
+                                                data-modal="tav-brief-modal-<?php echo esc_attr($req_id); ?>">
+                                            <?php esc_html_e('View Report', 'the-admin-vault'); ?>
+                                        </button>
+                                    <?php break;
+                                    
+                                    case 'archived': ?>
+                                        <button type="button"
+                                                class="tav-action-btn tav-action-view-archived tav-open-request-modal"
+                                                data-modal="tav-brief-modal-<?php echo esc_attr($req_id); ?>">
+                                            <?php esc_html_e('View Archive', 'the-admin-vault'); ?>
+                                        </button>
+                                    <?php break;
+                                    
+                                    default: ?>
+                                        <button type="button"
+                                                class="tav-action-btn tav-action-view-brief tav-open-request-modal"
+                                                data-modal="tav-brief-modal-<?php echo esc_attr($req_id); ?>">
+                                            <?php esc_html_e('View', 'the-admin-vault'); ?>
+                                        </button>
+                                <?php endswitch; ?>
                             </div>
                         </td>
                     </tr>
@@ -407,25 +461,46 @@ $filter_statuses = [
             else:
             ?>
                 <tr>
-                    <td colspan="8" class="tav-empty"><?php esc_html_e('No requests found.', 'the-admin-vault'); ?></td>
+                    <td colspan="6" class="tav-empty"><?php esc_html_e('No requests found.', 'the-admin-vault'); ?></td>
                 </tr>
             <?php endif; ?>
         </tbody>
     </table>
 </div>
 
-<?php if ($req_query->max_num_pages > 1): ?>
-    <div class="tav-pagination">
-        <?php
-        echo paginate_links([
-            'base' => add_query_arg('paged', '%#%'),
-            'format' => '',
-            'total' => $req_query->max_num_pages,
-            'current' => $paged,
-        ]);
+<!-- Pagination -->
+<div class="tav-requests-pagination">
+    <span class="tav-pagination-info">
+        <?php 
+        printf(
+            esc_html__('Page %1$d of %2$d', 'the-admin-vault'),
+            $paged,
+            max(1, $total_pages)
+        ); 
         ?>
+    </span>
+    <div class="tav-pagination-buttons">
+        <?php if ($paged > 1): ?>
+            <a href="<?php echo esc_url(add_query_arg('paged', $paged - 1)); ?>" class="tav-pagination-btn tav-pagination-prev">
+                <?php esc_html_e('Previous', 'the-admin-vault'); ?>
+            </a>
+        <?php else: ?>
+            <span class="tav-pagination-btn tav-pagination-prev disabled">
+                <?php esc_html_e('Previous', 'the-admin-vault'); ?>
+            </span>
+        <?php endif; ?>
+        
+        <?php if ($paged < $total_pages): ?>
+            <a href="<?php echo esc_url(add_query_arg('paged', $paged + 1)); ?>" class="tav-pagination-btn tav-pagination-next">
+                <?php esc_html_e('Next', 'the-admin-vault'); ?>
+            </a>
+        <?php else: ?>
+            <span class="tav-pagination-btn tav-pagination-next disabled">
+                <?php esc_html_e('Next', 'the-admin-vault'); ?>
+            </span>
+        <?php endif; ?>
     </div>
-<?php endif; ?>
+</div>
 </form><!-- /tav-bulk-form -->
 
 <?php
@@ -439,11 +514,11 @@ if ($req_query->have_posts()) :
 
         $brief_status = get_post_meta($brief_req_id, 'status', true);
         $brief_client_selected = get_field('client_selected_storytellers', $brief_req_id) ?: get_post_meta($brief_req_id, 'client_selected_storytellers', true);
-        // Completed rows always get a brief modal so admins can review what was delivered.
+        // Completed/archived rows always get a brief modal so admins can review what was delivered.
         // For other allowed statuses, skip rows where the client has already picked
         // (those open the "assigned" details modal instead).
-        if ($brief_status !== 'completed' && !empty($brief_client_selected)) continue;
-        if (!in_array($brief_status, ['pending_payment', 'in_vetting', 'matching', 'ready_review', 'paid', 'completed'], true)) continue;
+        if (!in_array($brief_status, ['completed', 'archived'], true) && !empty($brief_client_selected)) continue;
+        if (!in_array($brief_status, ['pending', 'pending_payment', 'in_vetting', 'matching', 'ready_review', 'paid', 'completed', 'archived'], true)) continue;
 
         $b_author_id    = (int) get_post_field('post_author', $brief_req_id);
         $b_client_name  = get_the_author_meta('display_name', $b_author_id) ?: 'Unknown';
@@ -473,8 +548,9 @@ if ($req_query->have_posts()) :
         }
 
         $b_status_labels = [
-            'pending_payment' => 'Payment Pending', 'paid' => 'Paid', 'in_vetting' => 'In Vetting',
-            'matching' => 'Matching', 'ready_review' => 'Ready to Review', 'completed' => 'Completed',
+            'pending' => 'Pending', 'pending_payment' => 'Awaiting Payment', 'paid' => 'Paid', 
+            'in_vetting' => 'In Vetting', 'matching' => 'Matching', 'ready_review' => 'Ready for Review', 
+            'assigned' => 'Assigned', 'completed' => 'Completed', 'archived' => 'Archived',
         ];
         $b_status_label = $b_status_labels[$brief_status] ?? ucwords(str_replace('_', ' ', $brief_status));
         ?>
@@ -816,6 +892,255 @@ if ($req_query->have_posts()) :
                         <?php endforeach; ?>
 
                     </div><!-- /.tav-req-section -->
+                </div><!-- /.tav-modal-body -->
+            </div><!-- /.tav-modal-container -->
+        </div><!-- /.tav-modal -->
+
+    <?php endwhile;
+    wp_reset_postdata();
+endif; ?>
+
+<?php
+/* ─────────────────────────────────────────────────────────────
+ * Debug modals for "Name not available" requests
+ * ───────────────────────────────────────────────────────────── */
+if ($req_query->have_posts()) :
+    $req_query->rewind_posts();
+    while ($req_query->have_posts()) : $req_query->the_post();
+        $debug_req_id = get_the_ID();
+        $debug_post = get_post($debug_req_id);
+        $debug_title = $debug_post->post_title ?? '';
+        
+        // Only render debug modals for requests with empty/Auto Draft titles
+        if (!empty(trim($debug_title)) && $debug_title !== 'Auto Draft') {
+            continue;
+        }
+
+        // Get all post data
+        $debug_author_id = (int) $debug_post->post_author;
+        $debug_author = get_user_by('ID', $debug_author_id);
+        $debug_author_name = $debug_author ? $debug_author->display_name : 'Unknown';
+        $debug_author_email = $debug_author ? $debug_author->user_email : '';
+
+        // Get all post meta
+        $debug_all_meta = get_post_meta($debug_req_id);
+
+        // Get ACF fields if available
+        $debug_acf_fields = [];
+        if (function_exists('get_fields')) {
+            $debug_acf_fields = get_fields($debug_req_id) ?: [];
+        }
+
+        // Get taxonomies
+        $debug_taxonomies = [];
+        $post_taxonomies = get_object_taxonomies($debug_post->post_type);
+        foreach ($post_taxonomies as $tax) {
+            $terms = wp_get_post_terms($debug_req_id, $tax, ['fields' => 'names']);
+            if (!empty($terms) && !is_wp_error($terms)) {
+                $debug_taxonomies[$tax] = $terms;
+            }
+        }
+        ?>
+
+        <!-- Debug Modal: Request #<?php echo $debug_req_id; ?> -->
+        <div id="tav-debug-modal-<?php echo esc_attr($debug_req_id); ?>" class="tav-modal" role="dialog" aria-modal="true" aria-label="Debug Request #<?php echo esc_attr($debug_req_id); ?>">
+            <div class="tav-modal-overlay tav-close-request-modal"></div>
+            <div class="tav-modal-container tav-req-modal-container" style="max-width:900px;">
+
+                <!-- Header -->
+                <div class="tav-modal-header" style="background:#6366f1;">
+                    <div>
+                        <h2 style="color:#fff;">Debug: Request #<?php echo esc_html($debug_req_id); ?></h2>
+                        <p class="tav-req-modal-sub" style="color:rgba(255,255,255,0.8);">
+                            Raw data to diagnose why project name is not available
+                        </p>
+                    </div>
+                    <button type="button" class="tav-modal-close tav-close-request-modal" aria-label="Close" style="color:#fff;">&times;</button>
+                </div>
+
+                <!-- Scrollable body -->
+                <div class="tav-modal-body" style="max-height:70vh;overflow-y:auto;">
+
+                    <!-- Post Object Data -->
+                    <div class="tav-req-section" style="margin-bottom:24px;">
+                        <h3 class="tav-req-section-title" style="background:#f1f5f9;padding:12px;border-radius:6px;margin-bottom:16px;">
+                            Post Object (wp_posts)
+                        </h3>
+                        <table class="tav-debug-table" style="width:100%;border-collapse:collapse;font-size:13px;">
+                            <tr style="background:#f8fafc;">
+                                <td style="padding:8px 12px;border:1px solid #e2e8f0;font-weight:600;width:200px;">ID</td>
+                                <td style="padding:8px 12px;border:1px solid #e2e8f0;"><?php echo esc_html($debug_req_id); ?></td>
+                            </tr>
+                            <tr>
+                                <td style="padding:8px 12px;border:1px solid #e2e8f0;font-weight:600;">post_title</td>
+                                <td style="padding:8px 12px;border:1px solid #e2e8f0;<?php echo empty($debug_title) ? 'color:#ef4444;font-style:italic;' : ''; ?>">
+                                    <?php echo empty($debug_title) ? '(empty string)' : esc_html($debug_title); ?>
+                                </td>
+                            </tr>
+                            <tr style="background:#f8fafc;">
+                                <td style="padding:8px 12px;border:1px solid #e2e8f0;font-weight:600;">post_name (slug)</td>
+                                <td style="padding:8px 12px;border:1px solid #e2e8f0;"><?php echo esc_html($debug_post->post_name ?: '(empty)'); ?></td>
+                            </tr>
+                            <tr>
+                                <td style="padding:8px 12px;border:1px solid #e2e8f0;font-weight:600;">post_status</td>
+                                <td style="padding:8px 12px;border:1px solid #e2e8f0;"><?php echo esc_html($debug_post->post_status); ?></td>
+                            </tr>
+                            <tr style="background:#f8fafc;">
+                                <td style="padding:8px 12px;border:1px solid #e2e8f0;font-weight:600;">post_type</td>
+                                <td style="padding:8px 12px;border:1px solid #e2e8f0;"><?php echo esc_html($debug_post->post_type); ?></td>
+                            </tr>
+                            <tr>
+                                <td style="padding:8px 12px;border:1px solid #e2e8f0;font-weight:600;">post_date</td>
+                                <td style="padding:8px 12px;border:1px solid #e2e8f0;"><?php echo esc_html($debug_post->post_date); ?></td>
+                            </tr>
+                            <tr style="background:#f8fafc;">
+                                <td style="padding:8px 12px;border:1px solid #e2e8f0;font-weight:600;">post_author</td>
+                                <td style="padding:8px 12px;border:1px solid #e2e8f0;">
+                                    <?php echo esc_html($debug_author_id); ?> - <?php echo esc_html($debug_author_name); ?>
+                                    <?php if ($debug_author_email): ?>
+                                        (<a href="mailto:<?php echo esc_attr($debug_author_email); ?>"><?php echo esc_html($debug_author_email); ?></a>)
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding:8px 12px;border:1px solid #e2e8f0;font-weight:600;">post_content</td>
+                                <td style="padding:8px 12px;border:1px solid #e2e8f0;<?php echo empty($debug_post->post_content) ? 'color:#94a3b8;font-style:italic;' : ''; ?>">
+                                    <?php echo empty($debug_post->post_content) ? '(empty)' : esc_html(wp_trim_words($debug_post->post_content, 50, '...')); ?>
+                                </td>
+                            </tr>
+                            <tr style="background:#f8fafc;">
+                                <td style="padding:8px 12px;border:1px solid #e2e8f0;font-weight:600;">post_excerpt</td>
+                                <td style="padding:8px 12px;border:1px solid #e2e8f0;<?php echo empty($debug_post->post_excerpt) ? 'color:#94a3b8;font-style:italic;' : ''; ?>">
+                                    <?php echo empty($debug_post->post_excerpt) ? '(empty)' : esc_html($debug_post->post_excerpt); ?>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding:8px 12px;border:1px solid #e2e8f0;font-weight:600;">Edit Link</td>
+                                <td style="padding:8px 12px;border:1px solid #e2e8f0;">
+                                    <a href="<?php echo esc_url(get_edit_post_link($debug_req_id)); ?>" target="_blank" style="color:#0369a1;">
+                                        Edit in WordPress Admin &rarr;
+                                    </a>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- ACF Fields -->
+                    <?php if (!empty($debug_acf_fields)): ?>
+                    <div class="tav-req-section" style="margin-bottom:24px;">
+                        <h3 class="tav-req-section-title" style="background:#f1f5f9;padding:12px;border-radius:6px;margin-bottom:16px;">
+                            ACF Fields (<?php echo count($debug_acf_fields); ?> fields)
+                        </h3>
+                        <table class="tav-debug-table" style="width:100%;border-collapse:collapse;font-size:13px;">
+                            <?php 
+                            $row_alt = false;
+                            foreach ($debug_acf_fields as $field_name => $field_value): 
+                                $row_alt = !$row_alt;
+                            ?>
+                            <tr<?php echo $row_alt ? ' style="background:#f8fafc;"' : ''; ?>>
+                                <td style="padding:8px 12px;border:1px solid #e2e8f0;font-weight:600;width:200px;vertical-align:top;">
+                                    <?php echo esc_html($field_name); ?>
+                                </td>
+                                <td style="padding:8px 12px;border:1px solid #e2e8f0;word-break:break-word;">
+                                    <?php 
+                                    if (is_array($field_value) || is_object($field_value)) {
+                                        echo '<pre style="margin:0;font-size:12px;background:#f8fafc;padding:8px;border-radius:4px;overflow-x:auto;max-height:200px;">' . esc_html(print_r($field_value, true)) . '</pre>';
+                                    } elseif (empty($field_value) && $field_value !== 0 && $field_value !== '0') {
+                                        echo '<span style="color:#94a3b8;font-style:italic;">(empty)</span>';
+                                    } else {
+                                        echo esc_html($field_value);
+                                    }
+                                    ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </table>
+                    </div>
+                    <?php endif; ?>
+
+                    <!-- Taxonomies -->
+                    <?php if (!empty($debug_taxonomies)): ?>
+                    <div class="tav-req-section" style="margin-bottom:24px;">
+                        <h3 class="tav-req-section-title" style="background:#f1f5f9;padding:12px;border-radius:6px;margin-bottom:16px;">
+                            Taxonomies
+                        </h3>
+                        <table class="tav-debug-table" style="width:100%;border-collapse:collapse;font-size:13px;">
+                            <?php 
+                            $row_alt = false;
+                            foreach ($debug_taxonomies as $tax_name => $tax_terms): 
+                                $row_alt = !$row_alt;
+                            ?>
+                            <tr<?php echo $row_alt ? ' style="background:#f8fafc;"' : ''; ?>>
+                                <td style="padding:8px 12px;border:1px solid #e2e8f0;font-weight:600;width:200px;">
+                                    <?php echo esc_html($tax_name); ?>
+                                </td>
+                                <td style="padding:8px 12px;border:1px solid #e2e8f0;">
+                                    <?php echo esc_html(implode(', ', $tax_terms)); ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </table>
+                    </div>
+                    <?php endif; ?>
+
+                    <!-- All Post Meta -->
+                    <div class="tav-req-section" style="margin-bottom:24px;">
+                        <h3 class="tav-req-section-title" style="background:#f1f5f9;padding:12px;border-radius:6px;margin-bottom:16px;">
+                            All Post Meta (wp_postmeta) - <?php echo count($debug_all_meta); ?> entries
+                        </h3>
+                        <table class="tav-debug-table" style="width:100%;border-collapse:collapse;font-size:13px;">
+                            <?php 
+                            $row_alt = false;
+                            foreach ($debug_all_meta as $meta_key => $meta_values): 
+                                // Skip internal ACF field references (start with _)
+                                if (strpos($meta_key, '_') === 0 && strpos($meta_key, '_wp_') !== 0) {
+                                    continue;
+                                }
+                                $row_alt = !$row_alt;
+                            ?>
+                            <tr<?php echo $row_alt ? ' style="background:#f8fafc;"' : ''; ?>>
+                                <td style="padding:8px 12px;border:1px solid #e2e8f0;font-weight:600;width:200px;vertical-align:top;">
+                                    <?php echo esc_html($meta_key); ?>
+                                </td>
+                                <td style="padding:8px 12px;border:1px solid #e2e8f0;word-break:break-word;">
+                                    <?php 
+                                    foreach ($meta_values as $mv) {
+                                        $unserialized = @unserialize($mv);
+                                        if ($unserialized !== false || $mv === 'b:0;') {
+                                            echo '<pre style="margin:0;font-size:12px;background:#f8fafc;padding:8px;border-radius:4px;overflow-x:auto;max-height:150px;">' . esc_html(print_r($unserialized, true)) . '</pre>';
+                                        } elseif (empty($mv) && $mv !== 0 && $mv !== '0') {
+                                            echo '<span style="color:#94a3b8;font-style:italic;">(empty)</span>';
+                                        } else {
+                                            echo esc_html($mv);
+                                        }
+                                    }
+                                    ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </table>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="tav-req-section">
+                        <h3 class="tav-req-section-title" style="background:#fef3c7;padding:12px;border-radius:6px;margin-bottom:16px;">
+                            Quick Actions
+                        </h3>
+                        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                            <a href="<?php echo esc_url(get_edit_post_link($debug_req_id)); ?>" 
+                               target="_blank" 
+                               class="tav-action-btn" 
+                               style="background:#0369a1;text-decoration:none;">
+                                Edit Post in WP Admin
+                            </a>
+                            <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=fulfill&request_id=' . $debug_req_id)); ?>" 
+                               class="tav-action-btn tav-action-fulfill"
+                               style="text-decoration:none;">
+                                Fulfill Request
+                            </a>
+                        </div>
+                    </div>
+
                 </div><!-- /.tav-modal-body -->
             </div><!-- /.tav-modal-container -->
         </div><!-- /.tav-modal -->

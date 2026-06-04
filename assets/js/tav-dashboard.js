@@ -4,15 +4,36 @@ jQuery(document).ready(function ($) {
     const $collapseBtn = $('#tav-sidebar-collapse');
     const storageKey = 'tav_sidebar_collapsed';
 
-    // Collapsed by default — only expand if the user explicitly opened it
-    if (localStorage.getItem(storageKey) !== 'false') {
-        $sidebar.addClass('collapsed');
-    }
+    // Sidebar collapse functionality
+    if ($collapseBtn.length) {
+        if (localStorage.getItem(storageKey) !== 'false') {
+            $sidebar.addClass('collapsed');
+        }
 
-    $collapseBtn.on('click', function () {
-        $sidebar.toggleClass('collapsed');
-        localStorage.setItem(storageKey, $sidebar.hasClass('collapsed'));
-    });
+        $collapseBtn.on('click', function () {
+            $sidebar.toggleClass('collapsed');
+            localStorage.setItem(storageKey, $sidebar.hasClass('collapsed'));
+        });
+    }
+    
+    // ── Requests Page: Filters Toggle ──────────────────────────────
+    const $filtersToggle = $('#tav-toggle-filters');
+    const $advancedFilters = $('#tav-advanced-filters');
+    const filtersStorageKey = 'tav_filters_visible';
+    
+    if ($filtersToggle.length && $advancedFilters.length) {
+        // Restore filter visibility state
+        if (localStorage.getItem(filtersStorageKey) === 'true') {
+            $advancedFilters.show();
+            $filtersToggle.addClass('active');
+        }
+        
+        $filtersToggle.on('click', function () {
+            $advancedFilters.slideToggle(200);
+            $(this).toggleClass('active');
+            localStorage.setItem(filtersStorageKey, $advancedFilters.is(':visible'));
+        });
+    }
 
     // ── Revenue chart ───────────────────────────────────────────────
     function tavReadInitialChartData() {

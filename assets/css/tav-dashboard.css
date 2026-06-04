@@ -4,13 +4,13 @@
 
 /* ── Tokens ────────────────────────────────────────────────── */
 :root {
-    --tav-sidebar-bg: #0f3d4c;
+    --tav-sidebar-bg: #269EB2;
     --tav-sidebar-w: 240px;
     --tav-sidebar-collapsed-w: 68px;
-    --tav-sidebar-hover: rgba(255, 255, 255, .1);
-    --tav-sidebar-active: rgba(255, 255, 255, .14);
-    --tav-sidebar-text: #b8d4de;
-    --tav-sidebar-text-active: #ffffff;
+    --tav-sidebar-hover: rgba(255, 255, 255, .15);
+    --tav-sidebar-active: rgba(255, 255, 255, .95);
+    --tav-sidebar-text: rgba(255, 255, 255, .85);
+    --tav-sidebar-text-active: #269EB2;
     --tav-accent: #269EB2;
     --tav-accent-green: #22c55e;
     --tav-bg: #eef2f6;
@@ -47,6 +47,7 @@
     background: var(--tav-bg);
     color: var(--tav-text-primary);
     -webkit-font-smoothing: antialiased;
+    overflow: visible; /* Required for sticky sidebar to work */
 }
 
 /* ── Sidebar ───────────────────────────────────────────────── */
@@ -57,34 +58,64 @@
     flex-direction: column;
     flex-shrink: 0;
     transition: width .3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    z-index: 10;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    z-index: 100;
 }
 
 .tav-sidebar.collapsed {
     width: var(--tav-sidebar-collapsed-w);
 }
 
+/* Sidebar scrollbar styling */
+.tav-sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.tav-sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.tav-sidebar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, .2);
+    border-radius: 3px;
+}
+
+.tav-sidebar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, .3);
+}
+
 .tav-sidebar-brand {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 24px 20px 28px;
+    padding: 24px 20px 20px;
 }
 
 .tav-sidebar-logo {
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, var(--tav-accent), #818cf8);
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .15);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 800;
-    font-size: 14px;
     color: #fff;
-    letter-spacing: -.5px;
     flex-shrink: 0;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.tav-sidebar-logo:hover {
+    background: rgba(255, 255, 255, .25);
+}
+
+.tav-sidebar-logo svg {
+    width: 24px;
+    height: 24px;
 }
 
 .tav-sidebar-brand-text {
@@ -104,21 +135,44 @@
 .tav-sidebar-brand-title {
     color: #fff;
     font-weight: 700;
-    font-size: 14px;
+    font-size: 15px;
     line-height: 1.2;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tav-sidebar-brand-title svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
 }
 
 .tav-sidebar-brand-sub {
-    color: var(--tav-sidebar-text);
-    font-size: 11px;
-    font-weight: 400;
-    margin-top: 2px;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    margin-top: 0;
 }
 
-/* ── Sidebar Toggle ────────────────────────────────────────── */
+/* ── Sidebar Section Label ─────────────────────────────────── */
+.tav-sidebar-section-label {
+    padding: 20px 20px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, .6);
+    text-transform: uppercase;
+}
+
+.tav-sidebar.collapsed .tav-sidebar-section-label {
+    display: none;
+}
+
+/* ── Sidebar Toggle (Hidden by default, can be enabled) ───── */
 .tav-sidebar-toggle {
+    display: none;
     padding: 0 12px 12px;
-    display: flex;
     justify-content: flex-end;
 }
 
@@ -147,45 +201,67 @@
 }
 
 .tav-sidebar-nav li {
-    margin-bottom: 2px;
+    margin-bottom: 4px;
 }
 
 .tav-sidebar-nav a {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
-    border-radius: 8px;
-    font-size: 13.5px;
+    gap: 14px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 15px;
     font-weight: 500;
     color: var(--tav-sidebar-text);
     text-decoration: none;
     transition: all .15s ease;
+    position: relative;
 }
 
 .tav-sidebar-nav a:hover {
     background: var(--tav-sidebar-hover);
-    color: #e2e8f0;
+    color: #fff;
 }
 
 .tav-sidebar-nav a.active {
     background: var(--tav-sidebar-active);
     color: var(--tav-sidebar-text-active);
+    font-weight: 600;
 }
 
-.tav-sidebar-nav a .dashicons,
-.tav-sidebar-nav a svg {
+.tav-sidebar-nav a .tav-nav-icon {
     width: 20px;
     height: 20px;
-    font-size: 20px;
-    opacity: .7;
     flex-shrink: 0;
+    opacity: .9;
 }
 
-.tav-sidebar-nav a.active .dashicons,
-.tav-sidebar-nav a.active svg {
+.tav-sidebar-nav a.active .tav-nav-icon {
     opacity: 1;
     color: var(--tav-accent);
+}
+
+/* Nav Badge for Request count */
+.tav-nav-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    margin-left: auto;
+    background: rgba(255, 255, 255, .25);
+    color: #fff;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1.5px solid rgba(255, 255, 255, .4);
+}
+
+.tav-sidebar-nav a.active .tav-nav-badge {
+    background: var(--tav-accent);
+    color: #fff;
+    border-color: var(--tav-accent);
 }
 
 .tav-sidebar.collapsed .tav-sidebar-nav a {
@@ -193,11 +269,190 @@
     padding: 12px 0;
 }
 
-.tav-sidebar.collapsed .tav-sidebar-nav a span:not(.dashicons) {
+.tav-sidebar.collapsed .tav-sidebar-nav a span:not(.tav-nav-icon):not(.tav-nav-badge) {
     display: none;
     opacity: 0;
     width: 0;
     overflow: hidden;
+}
+
+.tav-sidebar.collapsed .tav-nav-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    min-width: 18px;
+    height: 18px;
+    font-size: 10px;
+    padding: 0 4px;
+}
+
+/* ── Sidebar Bottom (Settings) ─────────────────────────────── */
+.tav-sidebar-bottom {
+    padding: 16px 12px 24px;
+    margin-top: auto;
+}
+
+.tav-sidebar-settings {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    color: var(--tav-sidebar-text);
+    text-decoration: none;
+    transition: all .15s ease;
+}
+
+.tav-sidebar-settings:hover {
+    background: var(--tav-sidebar-hover);
+    color: #fff;
+}
+
+.tav-sidebar-settings.active {
+    background: var(--tav-sidebar-active);
+    color: var(--tav-sidebar-text-active);
+}
+
+.tav-sidebar-settings .tav-nav-icon {
+    width: 22px;
+    height: 22px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SIDEBAR LAYOUT (Single Collapsible Sidebar)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Sidebar Section Label - shown in expanded, hidden in collapsed */
+.tav-sidebar-section-label {
+    padding: 0 16px;
+    margin-bottom: 8px;
+    transition: opacity 0.2s ease;
+}
+
+.tav-sidebar-section-label span {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.tav-sidebar.collapsed .tav-sidebar-section-label {
+    opacity: 0;
+    height: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+/* Nav text visibility */
+.tav-nav-text {
+    transition: opacity 0.2s ease, width 0.2s ease;
+    white-space: nowrap;
+}
+
+.tav-sidebar.collapsed .tav-nav-text {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+}
+
+/* Badge visibility in collapsed state */
+.tav-sidebar.collapsed .tav-nav-badge {
+    display: none;
+}
+
+/* Sidebar Bottom Section */
+.tav-sidebar-bottom-section {
+    margin-top: auto;
+    padding: 16px 8px 16px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.tav-sidebar-nav-bottom {
+    margin-bottom: 12px;
+}
+
+/* User Profile Card */
+.tav-sidebar-user-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+}
+
+.tav-user-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.tav-user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.tav-user-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.tav-user-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tav-user-email {
+    font-size: 11px;
+    color: rgba(255,255,255,0.6);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tav-user-dropdown-toggle {
+    background: none;
+    border: none;
+    padding: 4px;
+    color: rgba(255,255,255,0.6);
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+
+.tav-user-dropdown-toggle:hover {
+    color: #fff;
+}
+
+/* Collapsed state for bottom section */
+.tav-sidebar.collapsed .tav-sidebar-bottom-section {
+    padding: 16px 4px;
+}
+
+.tav-sidebar.collapsed .tav-sidebar-user-card {
+    justify-content: center;
+    padding: 8px;
+}
+
+.tav-sidebar.collapsed .tav-user-info,
+.tav-sidebar.collapsed .tav-user-dropdown-toggle {
+    display: none;
+}
+
+.tav-sidebar.collapsed .tav-user-avatar {
+    width: 32px;
+    height: 32px;
 }
 
 /* ── Main Content ──────────────────────────────────────────── */
@@ -206,12 +461,14 @@
     display: flex;
     min-width: 0;
     min-height: 100vh;
+    overflow: visible; /* Required for sticky sidebar to work */
 }
 
 .tav-content {
     flex: 1;
     padding: 32px 40px 60px;
     min-width: 0;
+    overflow-y: auto;
 }
 
 .tav-page-header {
@@ -404,6 +661,8 @@
     margin-top: 4px;
     line-height: 1.4;
 }
+
+.tav-stat-badge {
     font-size: 12px;
     font-weight: 600;
     padding: 3px 8px;
@@ -2108,5 +2367,2321 @@
 
     .tav-chart-filters {
         justify-content: flex-start;
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SEARCH REQUESTS MANAGEMENT PAGE STYLES
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Page Header ──────────────────────────────────────────────── */
+.tav-requests-header {
+    margin-bottom: 24px;
+}
+
+.tav-requests-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* ── Toolbar (Search + Filters) ───────────────────────────────── */
+.tav-requests-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.tav-requests-search-form {
+    flex: 1;
+    max-width: 400px;
+}
+
+.tav-search-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.tav-search-icon {
+    position: absolute;
+    left: 14px;
+    color: var(--tav-text-muted);
+    pointer-events: none;
+}
+
+.tav-requests-search {
+    width: 100%;
+    padding: 12px 16px 12px 44px;
+    border: 1px solid var(--tav-border);
+    border-radius: 8px;
+    font-size: 14px;
+    background: var(--tav-card-bg);
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.tav-requests-search:focus {
+    outline: none;
+    border-color: var(--tav-accent);
+    box-shadow: 0 0 0 3px rgba(38, 158, 178, .1);
+}
+
+.tav-filters-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: var(--tav-card-bg);
+    border: 1px solid var(--tav-border);
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--tav-text-secondary);
+    cursor: pointer;
+    transition: all .15s ease;
+}
+
+.tav-filters-toggle:hover,
+.tav-filters-toggle.active {
+    border-color: var(--tav-accent);
+    color: var(--tav-accent);
+    background: rgba(38, 158, 178, .05);
+}
+
+/* ── Advanced Filters Panel ───────────────────────────────────── */
+.tav-advanced-filters {
+    background: var(--tav-card-bg);
+    border: 1px solid var(--tav-border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+}
+
+.tav-filters-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-end;
+}
+
+.tav-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.tav-filter-group label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--tav-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+
+.tav-filter-group select,
+.tav-filter-group input {
+    padding: 10px 14px;
+    border: 1px solid var(--tav-border);
+    border-radius: 6px;
+    font-size: 14px;
+    min-width: 160px;
+}
+
+.tav-date-range {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tav-date-range input {
+    min-width: 140px;
+}
+
+.tav-date-range span {
+    color: var(--tav-text-muted);
+}
+
+.tav-filter-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.tav-btn-filter {
+    padding: 10px 20px;
+    background: var(--tav-accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s ease;
+}
+
+.tav-btn-filter:hover {
+    background: #1f8a9c;
+}
+
+.tav-btn-clear {
+    padding: 10px 16px;
+    background: transparent;
+    color: var(--tav-text-secondary);
+    border: 1px solid var(--tav-border);
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all .15s ease;
+}
+
+.tav-btn-clear:hover {
+    border-color: var(--tav-text-secondary);
+    color: var(--tav-text-primary);
+}
+
+/* ── Requests Table ───────────────────────────────────────────── */
+.tav-requests-table-wrap {
+    border-radius: 12px;
+    overflow: hidden;
+    overflow-x: auto;
+}
+
+.tav-requests-table {
+    width: 100%;
+    table-layout: fixed;
+}
+
+/* Column widths */
+.tav-requests-table .tav-col-project { width: 25%; }
+.tav-requests-table .tav-col-client { width: 15%; }
+.tav-requests-table .tav-col-status { width: 15%; }
+.tav-requests-table .tav-col-submitted { width: 12%; }
+.tav-requests-table .tav-col-due { width: 10%; }
+.tav-requests-table .tav-col-actions { width: 23%; text-align: right; }
+
+.tav-requests-table thead th {
+    padding: 16px 20px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--tav-text-secondary);
+    background: #f8fafc;
+    border-bottom: 1px solid var(--tav-border);
+    text-align: left;
+    white-space: nowrap;
+}
+
+.tav-sort-icon {
+    margin-left: 4px;
+    opacity: .4;
+    font-size: 10px;
+}
+
+.tav-requests-table tbody tr {
+    border-bottom: 1px solid #f1f5f9;
+    transition: background .15s ease;
+}
+
+.tav-requests-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.tav-requests-table tbody td {
+    padding: 16px 20px;
+    font-size: 14px;
+    color: var(--tav-text-secondary);
+    vertical-align: middle;
+}
+
+/* Project Name Cell */
+.tav-project-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    overflow: hidden;
+}
+
+/* Client cell ellipsis */
+.tav-col-client {
+    max-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tav-project-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--tav-accent);
+    flex-shrink: 0;
+}
+
+.tav-project-name {
+    font-weight: 500;
+    color: var(--tav-text-primary);
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+    cursor: default;
+}
+
+.tav-project-name[title] {
+    cursor: help;
+}
+
+/* Ensure project cell respects column width */
+.tav-col-project {
+    max-width: 0; /* Forces cell to respect table-layout: fixed */
+}
+
+.tav-project-cell {
+    min-width: 0; /* Allow flex child to shrink */
+}
+
+.tav-project-name.tav-name-unavailable,
+.tav-project-name.tav-project-name--unavailable {
+    color: var(--tav-text-muted);
+    font-style: italic;
+    font-weight: 400;
+}
+
+/* Status Badges */
+.tav-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.tav-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+
+/* Status: Awaiting Payment - Red/Orange */
+.tav-status-pending-payment {
+    background: #fee2e2;
+    color: #dc2626;
+}
+.tav-status-pending-payment .tav-status-dot {
+    background: #dc2626;
+}
+
+/* Status: Pending - Yellow */
+.tav-status-pending {
+    background: #fef3c7;
+    color: #d97706;
+}
+.tav-status-pending .tav-status-dot {
+    background: #d97706;
+}
+
+/* Status: Paid - Green (ready to start) */
+.tav-status-paid {
+    background: #dcfce7;
+    color: #16a34a;
+}
+.tav-status-paid .tav-status-dot {
+    background: #16a34a;
+}
+
+/* Status: In Vetting - Light Blue */
+.tav-status-vetting {
+    background: #e0f2fe;
+    color: #0284c7;
+}
+.tav-status-vetting .tav-status-dot {
+    background: #0284c7;
+}
+
+/* Status: Matching - Blue */
+.tav-status-matching {
+    background: #dbeafe;
+    color: #2563eb;
+}
+.tav-status-matching .tav-status-dot {
+    background: #2563eb;
+}
+
+/* Status: Ready for Review - Purple */
+.tav-status-ready-review {
+    background: #ede9fe;
+    color: #7c3aed;
+}
+.tav-status-ready-review .tav-status-dot {
+    background: #7c3aed;
+}
+
+/* Status: Assigned - Teal */
+.tav-status-assigned {
+    background: #ccfbf1;
+    color: #0d9488;
+}
+.tav-status-assigned .tav-status-dot {
+    background: #0d9488;
+}
+
+/* Status: Completed - Green */
+.tav-status-completed {
+    background: #d1fae5;
+    color: #059669;
+}
+.tav-status-completed .tav-status-dot {
+    background: #059669;
+}
+
+/* Status: Archived - Gray */
+.tav-status-archived {
+    background: #f1f5f9;
+    color: #64748b;
+}
+.tav-status-archived .tav-status-dot {
+    background: #64748b;
+}
+
+/* Legacy support */
+.tav-status-in-review {
+    background: #dbeafe;
+    color: #2563eb;
+}
+.tav-status-in-review .tav-status-dot {
+    background: #2563eb;
+}
+
+/* Action Buttons Container */
+.tav-action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+/* Action Buttons */
+.tav-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all .15s ease;
+}
+
+/* Action: View Brief (pending_payment, pending) - Gray outline */
+.tav-action-view-brief {
+    background: #fff;
+    color: #64748b;
+    border: 1px solid #cbd5e1;
+}
+.tav-action-view-brief:hover {
+    background: #f8fafc;
+    color: #475569;
+}
+
+/* Action: Start Matching (paid) - Green */
+.tav-action-start-matching {
+    background: #16a34a;
+    color: #fff;
+}
+.tav-action-start-matching:hover {
+    background: #15803d;
+    color: #fff;
+}
+
+/* Action: Continue Vetting (in_vetting) - Light Blue */
+.tav-action-continue-vetting {
+    background: #0284c7;
+    color: #fff;
+}
+.tav-action-continue-vetting:hover {
+    background: #0369a1;
+    color: #fff;
+}
+
+/* Action: Assign Storytellers (matching) - Blue */
+.tav-action-assign {
+    background: #2563eb;
+    color: #fff;
+}
+.tav-action-assign:hover {
+    background: #1d4ed8;
+    color: #fff;
+}
+
+/* Action: Awaiting Client (ready_review) - Purple outline */
+.tav-action-awaiting {
+    background: #fff;
+    color: #7c3aed;
+    border: 1px solid #c4b5fd;
+}
+.tav-action-awaiting:hover {
+    background: #f5f3ff;
+    color: #6d28d9;
+}
+
+/* Action: View Selection (assigned) - Teal */
+.tav-action-view-match {
+    background: #0d9488;
+    color: #fff;
+}
+.tav-action-view-match:hover {
+    background: #0f766e;
+    color: #fff;
+}
+
+/* Action: Mark Complete (assigned) - Green outline */
+.tav-action-complete {
+    background: #fff;
+    color: #059669;
+    border: 1px solid #6ee7b7;
+}
+.tav-action-complete:hover {
+    background: #ecfdf5;
+    color: #047857;
+}
+
+/* Action: View Report (completed) - Green */
+.tav-action-view-report {
+    background: #059669;
+    color: #fff;
+}
+.tav-action-view-report:hover {
+    background: #047857;
+    color: #fff;
+}
+
+/* Action: View Archive (archived) - Gray */
+.tav-action-view-archived {
+    background: #64748b;
+    color: #fff;
+}
+.tav-action-view-archived:hover {
+    background: #475569;
+    color: #fff;
+}
+
+/* Action: View Details (debug) - Indigo */
+.tav-action-debug {
+    background: #6366f1;
+    color: #fff;
+}
+.tav-action-debug:hover {
+    background: #4f46e5;
+    color: #fff;
+}
+
+/* Legacy fulfill button */
+.tav-action-fulfill {
+    background: var(--tav-accent);
+    color: #fff;
+}
+.tav-action-fulfill:hover {
+    background: #1f8a9c;
+    color: #fff;
+}
+
+/* ── Pagination ───────────────────────────────────────────────── */
+.tav-requests-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0;
+    margin-top: 8px;
+}
+
+.tav-pagination-info {
+    font-size: 14px;
+    color: var(--tav-text-secondary);
+}
+
+.tav-pagination-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.tav-pagination-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all .15s ease;
+}
+
+.tav-pagination-prev {
+    background: var(--tav-card-bg);
+    color: var(--tav-text-secondary);
+    border: 1px solid var(--tav-border);
+}
+
+.tav-pagination-prev:hover:not(.disabled) {
+    border-color: var(--tav-accent);
+    color: var(--tav-accent);
+}
+
+.tav-pagination-next {
+    background: var(--tav-accent);
+    color: #fff;
+    border: 1px solid var(--tav-accent);
+}
+
+.tav-pagination-next:hover:not(.disabled) {
+    background: #1f8a9c;
+    border-color: #1f8a9c;
+}
+
+.tav-pagination-btn.disabled {
+    opacity: .5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* ── Responsive ───────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .tav-requests-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .tav-requests-search-form {
+        max-width: none;
+    }
+    
+    .tav-filters-form {
+        flex-direction: column;
+    }
+    
+    .tav-filter-group select,
+    .tav-filter-group input {
+        min-width: 100%;
+    }
+    
+    .tav-filter-actions {
+        margin-left: 0;
+        width: 100%;
+    }
+    
+    .tav-requests-pagination {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STORYTELLER FORM STYLES (Figma-matched)
+   ══════════════════════════════════════════════════════════════ */
+
+/* Back Link */
+.tav-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--tav-text-secondary);
+    text-decoration: none;
+    margin-bottom: 16px;
+    transition: color .15s ease;
+}
+
+.tav-back-link:hover {
+    color: var(--tav-accent);
+}
+
+.tav-back-link svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Form Title */
+.tav-form-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--tav-text-primary);
+    margin: 0 0 24px;
+}
+
+/* Form Panel */
+.tav-storyteller-form-panel {
+    background: var(--tav-card-bg);
+    border-radius: var(--tav-card-radius);
+    box-shadow: var(--tav-card-shadow);
+    border: 1px solid var(--tav-border);
+    padding: 32px;
+}
+
+/* Form Groups */
+.tav-form-group {
+    margin-bottom: 24px;
+}
+
+.tav-form-group > label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--tav-text-primary);
+    margin-bottom: 8px;
+}
+
+/* Form Rows */
+.tav-form-row {
+    display: grid;
+    gap: 16px;
+}
+
+.tav-form-row--2col {
+    grid-template-columns: 1fr 1fr;
+}
+
+.tav-form-row--4col {
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+}
+
+.tav-form-row--5col {
+    grid-template-columns: 1fr 1fr 1fr 0.8fr 1.2fr;
+}
+
+.tav-form-row .tav-form-group {
+    margin-bottom: 0;
+}
+
+/* Readonly input styling */
+.tav-input-readonly {
+    background-color: #f8fafc !important;
+    color: var(--tav-text-secondary) !important;
+    cursor: not-allowed;
+    border-style: dashed !important;
+}
+
+/* Inputs & Selects */
+.tav-storyteller-form-panel input[type="text"],
+.tav-storyteller-form-panel input[type="email"],
+.tav-storyteller-form-panel input[type="number"],
+.tav-storyteller-form-panel input[type="url"],
+.tav-storyteller-form-panel input[type="date"],
+.tav-storyteller-form-panel select,
+.tav-storyteller-form-panel textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--tav-border);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: var(--tav-font);
+    color: var(--tav-text-primary);
+    background: #f9fafb;
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+
+.tav-storyteller-form-panel input::placeholder,
+.tav-storyteller-form-panel textarea::placeholder {
+    color: var(--tav-text-muted);
+}
+
+.tav-storyteller-form-panel input:focus,
+.tav-storyteller-form-panel select:focus,
+.tav-storyteller-form-panel textarea:focus {
+    outline: none;
+    border-color: var(--tav-accent);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(38, 158, 178, .1);
+}
+
+.tav-storyteller-form-panel select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 40px;
+    cursor: pointer;
+}
+
+.tav-storyteller-form-panel textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* Upload Zone */
+.tav-upload-zone {
+    border: 2px dashed var(--tav-accent);
+    border-radius: 12px;
+    background: rgba(38, 158, 178, .03);
+    padding: 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+    position: relative;
+}
+
+.tav-upload-zone:hover {
+    border-color: #0ea5e9;
+    background: rgba(38, 158, 178, .06);
+}
+
+.tav-upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.tav-upload-placeholder svg {
+    width: 32px;
+    height: 32px;
+    color: var(--tav-accent);
+}
+
+.tav-upload-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--tav-accent);
+}
+
+.tav-upload-hint {
+    font-size: 12px;
+    color: var(--tav-text-muted);
+}
+
+.tav-upload-preview {
+    position: relative;
+    display: inline-block;
+}
+
+.tav-upload-preview img {
+    max-width: 120px;
+    max-height: 120px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+.tav-upload-remove {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #ef4444;
+    color: #fff;
+    border: none;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .15s ease;
+}
+
+.tav-upload-remove:hover {
+    background: #dc2626;
+}
+
+/* Repeater Rows */
+.tav-repeater-row {
+    position: relative;
+    margin-bottom: 12px;
+}
+
+.tav-repeater-row:last-child {
+    margin-bottom: 0;
+}
+
+.tav-repeater-remove {
+    position: absolute;
+    top: 50%;
+    right: -32px;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #fee2e2;
+    color: #ef4444;
+    border: none;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .15s ease;
+}
+
+.tav-repeater-remove:hover {
+    background: #ef4444;
+    color: #fff;
+}
+
+/* Add Row Button */
+.tav-add-row-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 0;
+    background: none;
+    border: none;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--tav-text-muted);
+    cursor: pointer;
+    transition: color .15s ease;
+    margin-top: 8px;
+}
+
+.tav-add-row-btn:hover {
+    color: var(--tav-accent);
+}
+
+.tav-add-row-btn svg {
+    width: 12px;
+    height: 12px;
+}
+
+/* Tags Input */
+.tav-tags-input-wrap {
+    border: 1px solid var(--tav-border);
+    border-radius: 8px;
+    background: #f9fafb;
+    padding: 8px 12px;
+    min-height: 48px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    cursor: text;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.tav-tags-input-wrap:focus-within {
+    border-color: var(--tav-accent);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(38, 158, 178, .1);
+}
+
+.tav-tags-display {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.tav-tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: #e2e8f0;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--tav-text-secondary);
+}
+
+.tav-tag-remove {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--tav-text-muted);
+    border: none;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .15s ease;
+    padding: 0;
+}
+
+.tav-tag-remove:hover {
+    background: rgba(0, 0, 0, .1);
+    color: var(--tav-text-primary);
+}
+
+.tav-tags-input-wrap input[type="text"] {
+    flex: 1;
+    min-width: 120px;
+    padding: 4px 0;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    color: var(--tav-text-primary);
+}
+
+.tav-tags-input-wrap input[type="text"]:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+/* Checkbox */
+.tav-checkbox-group {
+    margin-top: 8px;
+}
+
+.tav-checkbox-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--tav-text-secondary);
+}
+
+.tav-checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--tav-border);
+    border-radius: 4px;
+    cursor: pointer;
+    accent-color: var(--tav-accent);
+}
+
+/* Form Actions */
+.tav-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--tav-border);
+}
+
+.tav-btn-cancel {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    background: transparent;
+    color: var(--tav-text-secondary);
+    border: 1px solid var(--tav-border);
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all .15s ease;
+}
+
+.tav-btn-cancel:hover {
+    background: #f8fafc;
+    color: var(--tav-text-primary);
+    border-color: var(--tav-text-muted);
+}
+
+.tav-btn-submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    background: var(--tav-accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s ease;
+    box-shadow: 0 4px 12px rgba(38, 158, 178, .2);
+}
+
+.tav-btn-submit:hover {
+    background: #1f8a9c;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(38, 158, 178, .3);
+}
+
+/* Multi-select styling */
+.tav-select-multiple {
+    min-height: 80px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .tav-form-row--2col,
+    .tav-form-row--4col,
+    .tav-form-row--5col {
+        grid-template-columns: 1fr;
+    }
+    
+    .tav-storyteller-form-panel {
+        padding: 20px;
+    }
+    
+    .tav-repeater-remove {
+        right: -24px;
+    }
+    
+    .tav-form-actions {
+        flex-direction: column;
+    }
+    
+    .tav-btn-cancel,
+    .tav-btn-submit {
+        width: 100%;
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   COMPREHENSIVE RESPONSIVE STYLES FOR ALL PAGES
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Filter Bar (used on Clients, Storytellers) ────────────────── */
+.tav-filter-bar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.tav-filter-bar input[type="text"],
+.tav-filter-bar select {
+    padding: 10px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--tav-border);
+    font-size: 14px;
+    min-height: 40px;
+    background: #fff;
+}
+
+.tav-filter-bar input[type="text"]:focus,
+.tav-filter-bar select:focus {
+    outline: none;
+    border-color: var(--tav-accent);
+    box-shadow: 0 0 0 3px rgba(38, 158, 178, .1);
+}
+
+.tav-filter-bar .tav-search-input {
+    min-width: 200px;
+}
+
+.tav-filter-bar .button {
+    min-height: 40px;
+    padding: 8px 16px;
+}
+
+@media (max-width: 768px) {
+    .tav-filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .tav-filter-bar input[type="text"],
+    .tav-filter-bar select {
+        width: 100% !important;
+        min-width: unset !important;
+    }
+    
+    .tav-filter-bar .button {
+        width: 100%;
+    }
+}
+
+/* ── Clients Page ──────────────────────────────────────────────── */
+
+/* Clients Toolbar */
+.tav-clients-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.tav-search-form {
+    flex: 1;
+    max-width: 400px;
+}
+
+.tav-search-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.tav-search-icon {
+    position: absolute;
+    left: 12px;
+    color: var(--tav-text-muted);
+    pointer-events: none;
+}
+
+.tav-search-input-wrap .tav-search-input {
+    width: 100%;
+    padding: 10px 14px 10px 40px;
+    border: 1px solid var(--tav-border);
+    border-radius: 8px;
+    font-size: 14px;
+    background: #fff;
+}
+
+.tav-search-input-wrap .tav-search-input:focus {
+    outline: none;
+    border-color: var(--tav-accent);
+    box-shadow: 0 0 0 3px rgba(38, 158, 178, 0.1);
+}
+
+.tav-filters-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: #fff;
+    border: 1px solid var(--tav-border);
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--tav-text-primary);
+    cursor: pointer;
+    transition: all .15s;
+}
+
+.tav-filters-btn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+/* Clients Table */
+.tav-clients-table th {
+    text-transform: none;
+    font-weight: 500;
+    color: var(--tav-text-secondary);
+}
+
+.tav-col-sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.tav-col-sortable:hover {
+    color: var(--tav-text-primary);
+}
+
+.tav-sort-icon {
+    font-size: 10px;
+    opacity: 0.5;
+    margin-left: 4px;
+}
+
+.tav-cell-email-col {
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+}
+
+/* Status Pill */
+.tav-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.tav-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.tav-status-active {
+    background: #d1fae5;
+    color: #059669;
+}
+
+.tav-status-cancelled {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.tav-status-suspended {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.tav-status-vip {
+    background: #e0e7ff;
+    color: #4f46e5;
+}
+
+/* Pagination */
+.tav-pagination-wrap {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    padding: 16px 0;
+}
+
+.tav-pagination-info {
+    font-size: 14px;
+    color: var(--tav-text-secondary);
+}
+
+.tav-pagination-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.tav-btn-outline {
+    background: #fff;
+    border: 1px solid var(--tav-border);
+    color: var(--tav-text-primary);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all .15s;
+}
+
+.tav-btn-outline:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.tav-btn-outline:disabled,
+.tav-btn-outline[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Amount cell */
+.tav-cell-amount {
+    font-weight: 600;
+}
+
+/* View Detail button in table */
+.tav-clients-table .tav-btn-primary {
+    padding: 8px 16px;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+@media (max-width: 1100px) {
+    /* Hide Email column on medium screens */
+    .tav-clients-table th:nth-child(3),
+    .tav-clients-table td:nth-child(3) {
+        display: none;
+    }
+}
+
+@media (max-width: 960px) {
+    /* Hide Total Spent and Join Date */
+    .tav-clients-table th:nth-child(5),
+    .tav-clients-table td:nth-child(5),
+    .tav-clients-table th:nth-child(6),
+    .tav-clients-table td:nth-child(6) {
+        display: none;
+    }
+    
+    .tav-clients-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .tav-search-form {
+        max-width: none;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Hide Contact column too */
+    .tav-clients-table th:nth-child(2),
+    .tav-clients-table td:nth-child(2) {
+        display: none;
+    }
+    
+    .tav-pagination-wrap {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+    }
+}
+
+@media (max-width: 600px) {
+    /* Hide Requests column */
+    .tav-clients-table th:nth-child(4),
+    .tav-clients-table td:nth-child(4) {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .tav-boutique-table th:nth-child(2),
+    .tav-boutique-table td:nth-child(2),
+    .tav-boutique-table th:nth-child(3),
+    .tav-boutique-table td:nth-child(3),
+    .tav-boutique-table th:nth-child(5),
+    .tav-boutique-table td:nth-child(5) {
+        display: none;
+    }
+    
+    .tav-cell-name {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .tav-boutique-avatar {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .tav-boutique-table td {
+        padding: 12px 16px;
+    }
+    
+    .tav-actions-wrap {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .tav-actions-wrap .tav-btn {
+        width: 100%;
+        min-width: unset !important;
+    }
+}
+
+/* ── Client Modal Responsive ───────────────────────────────────── */
+@media (max-width: 768px) {
+    #tav-client-modal .tav-modal-wrap {
+        width: 95% !important;
+        max-height: 90vh !important;
+        margin: 20px auto;
+    }
+}
+
+/* ── Fulfillment Page ──────────────────────────────────────────── */
+.tav-fulfillment-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 20px;
+}
+
+.tav-fulfillment-grid > .tav-panel {
+    align-self: start;
+}
+
+/* Brief Content Styling */
+.tav-brief-content {
+    padding: 20px;
+}
+
+.tav-brief-content h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--tav-text-primary);
+    margin: 16px 0 12px;
+}
+
+.tav-brief-content hr {
+    border: none;
+    border-top: 1px solid var(--tav-border);
+    margin: 16px 0;
+}
+
+.tav-brief-text {
+    font-size: 13px;
+    color: var(--tav-text-secondary);
+    line-height: 1.6;
+}
+
+/* Fulfillment Search Form */
+.tav-fulfillment-search {
+    padding: 15px;
+    border-bottom: 1px solid var(--tav-border);
+}
+
+.tav-fulfillment-search-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.tav-fulfillment-search input[type="text"],
+.tav-fulfillment-search select {
+    padding: 10px 12px;
+    border: 1px solid var(--tav-border);
+    border-radius: 6px;
+    font-size: 14px;
+    min-height: 40px;
+    background: #fff;
+}
+
+.tav-fulfillment-search input[type="text"]:focus,
+.tav-fulfillment-search select:focus {
+    outline: none;
+    border-color: var(--tav-accent);
+}
+
+.tav-fulfillment-search input[name="s_term"] {
+    flex: 1;
+    min-width: 160px;
+}
+
+.tav-fulfillment-search input[name="s_location"] {
+    width: 140px;
+}
+
+/* Storyteller List */
+.tav-storyteller-list {
+    padding: 15px;
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.tav-storyteller-list ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.tav-storyteller-list li {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-bottom: 1px solid #f0f0f0;
+    gap: 12px;
+    transition: background .15s;
+}
+
+.tav-storyteller-list li:hover {
+    background: #f9fafb;
+}
+
+.tav-storyteller-list li.selected {
+    background: #edfaef;
+}
+
+.tav-storyteller-list input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.tav-storyteller-list .tav-st-thumb {
+    width: 40px;
+    height: 40px;
+    background: #eee;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.tav-storyteller-list .tav-st-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.tav-storyteller-list .tav-st-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.tav-storyteller-list .tav-st-info strong {
+    display: block;
+    font-size: 14px;
+    color: var(--tav-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tav-storyteller-list .tav-st-info span {
+    font-size: 12px;
+    color: var(--tav-text-muted);
+}
+
+.tav-storyteller-list .tav-st-metric {
+    font-size: 13px;
+    color: var(--tav-text-secondary);
+    min-width: 70px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+/* Engagement Badges */
+.tav-engagement-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* Storyteller Action Button */
+.tav-st-action {
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+/* Selection Error */
+.tav-selection-error {
+    display: none;
+    color: #b91c1c;
+    font-size: 13px;
+    margin: 0 0 10px;
+}
+
+/* Fulfillment Footer */
+.tav-fulfillment-footer {
+    text-align: right;
+    padding: 15px;
+    background: #f9f9f9;
+    border-top: 1px solid var(--tav-border);
+}
+
+@media (max-width: 1024px) {
+    .tav-fulfillment-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .tav-fulfillment-grid > .tav-panel:first-child {
+        order: 2;
+    }
+    
+    .tav-fulfillment-grid > .tav-panel:last-child {
+        order: 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .tav-fulfillment-search-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .tav-fulfillment-search input[type="text"],
+    .tav-fulfillment-search select {
+        width: 100% !important;
+        min-width: unset !important;
+    }
+    
+    .tav-storyteller-list li {
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 14px 12px;
+    }
+    
+    .tav-storyteller-list .tav-st-info {
+        flex: 1 1 calc(100% - 80px);
+    }
+    
+    .tav-storyteller-list .tav-st-metric {
+        min-width: 50px;
+    }
+    
+    .tav-storyteller-list li > .button,
+    .tav-storyteller-list li > div:last-child {
+        width: 100%;
+        margin-left: 0 !important;
+        margin-top: 4px;
+    }
+    
+    .tav-storyteller-list li > div:last-child .button {
+        width: 100%;
+    }
+    
+    .tav-fulfillment-footer {
+        text-align: center;
+    }
+    
+    .tav-fulfillment-footer .tav-btn-primary {
+        width: 100%;
+    }
+}
+
+/* ── Settings Page ─────────────────────────────────────────────── */
+.tav-settings-form-panel {
+    padding: 20px;
+}
+
+.tav-settings-section-title {
+    margin: 0 0 6px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--tav-text-primary);
+}
+
+.tav-settings-section-title.tav-no-margin-top {
+    margin-top: 0;
+}
+
+.tav-settings-section-desc {
+    margin-bottom: 15px;
+}
+
+.tav-settings-divider {
+    margin: 28px 0;
+    border: none;
+    border-top: 1px solid var(--tav-border);
+}
+
+@media (max-width: 768px) {
+    .tav-settings-form-panel {
+        padding: 16px;
+    }
+    
+    .tav-tab-list {
+        flex-direction: column;
+        gap: 0 !important;
+    }
+    
+    .tav-tab-btn {
+        width: 100%;
+        border-radius: 0 !important;
+        text-align: left;
+    }
+    
+    .tav-tab-btn:first-child {
+        border-radius: 6px 6px 0 0 !important;
+    }
+    
+    .tav-tab-btn.tav-active {
+        bottom: 0 !important;
+    }
+    
+    .tav-tab-panel {
+        border-radius: 0 0 6px 6px !important;
+    }
+    
+    .form-table th,
+    .form-table td {
+        display: block;
+        width: 100%;
+        padding: 10px 0;
+    }
+    
+    .form-table th {
+        padding-bottom: 5px;
+    }
+    
+    .form-table input.regular-text,
+    .form-table textarea {
+        width: 100% !important;
+    }
+    
+    .tav-template-footer {
+        flex-direction: column;
+    }
+    
+    .tav-template-footer .tav-btn {
+        width: 100%;
+    }
+    
+    .tav-ph-box table {
+        font-size: 12px;
+    }
+    
+    .tav-ph-box td:first-child {
+        display: block;
+        padding-bottom: 2px;
+    }
+    
+    .tav-ph-box td:last-child {
+        display: block;
+        padding-bottom: 8px;
+    }
+    
+    #tav-preview-inner {
+        width: 95% !important;
+        padding: 20px !important;
+    }
+}
+
+/* ── Notifications Page ────────────────────────────────────────── */
+@media (max-width: 600px) {
+    .tav-notifications-stats {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .tav-notif-stat-card {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    
+    .tav-notif-stat-action {
+        width: 100%;
+        text-align: center;
+        padding: 8px;
+        background: #eff6ff;
+        border-radius: 6px;
+    }
+    
+    .tav-notif-item {
+        flex-wrap: wrap;
+        padding: 12px 16px;
+    }
+    
+    .tav-notif-content {
+        flex: 1 1 calc(100% - 56px);
+    }
+    
+    .tav-notif-action {
+        width: 100%;
+        text-align: center;
+        margin-top: 8px;
+        background: #eff6ff;
+    }
+}
+
+/* ── General Page Header Responsive ────────────────────────────── */
+@media (max-width: 768px) {
+    .tav-page-header {
+        margin-bottom: 20px;
+    }
+    
+    .tav-page-title {
+        font-size: 20px;
+    }
+    
+    .tav-header-actions {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .tav-header-actions .tav-btn-primary {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ── Content Area Responsive ───────────────────────────────────── */
+@media (max-width: 768px) {
+    .tav-content {
+        padding: 16px !important;
+    }
+    
+    .tav-panel {
+        border-radius: 12px;
+    }
+    
+    .tav-panel-header {
+        padding: 16px 16px 0;
+    }
+    
+    .tav-panel-list li {
+        padding: 12px 16px;
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MODAL SYSTEM (Global)
+   ══════════════════════════════════════════════════════════════ */
+
+.tav-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+}
+
+.tav-modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+}
+
+.tav-modal-container,
+.tav-modal-wrap {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 720px;
+    max-height: 88vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .25);
+    display: flex;
+    flex-direction: column;
+}
+
+.tav-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--tav-border);
+    flex-shrink: 0;
+}
+
+.tav-modal-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--tav-text-primary);
+}
+
+.tav-modal-body {
+    padding: 24px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.tav-modal-loader {
+    text-align: center;
+    padding: 40px 0;
+}
+
+.tav-modal-loader p {
+    margin: 12px 0 0;
+    color: var(--tav-text-muted);
+}
+
+/* ── Modal Responsive (Global) ─────────────────────────────────── */
+@media (max-width: 768px) {
+    .tav-modal-container,
+    .tav-modal-wrap,
+    .tav-req-modal-container {
+        width: 95% !important;
+        max-width: none !important;
+        max-height: 90vh !important;
+        border-radius: 8px;
+    }
+    
+    .tav-modal-header {
+        padding: 16px 20px;
+    }
+    
+    .tav-modal-body {
+        padding: 16px;
+    }
+    
+    .tav-req-brief-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .tav-req-st-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .tav-req-st-edit-btn {
+        margin-top: 12px;
+    }
+    
+    .tav-req-st-platforms {
+        flex-direction: column;
+    }
+    
+    .tav-req-st-platform-chip {
+        min-width: unset;
+    }
+}
+
+/* ── Pagination Responsive ─────────────────────────────────────── */
+@media (max-width: 600px) {
+    .tav-pagination {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .tav-pagination .page-numbers {
+        min-width: 32px;
+        height: 32px;
+        padding: 0 8px;
+        font-size: 13px;
+    }
+}
+
+/* ── Action Buttons Responsive ─────────────────────────────────── */
+@media (max-width: 768px) {
+    .tav-action-buttons {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .tav-action-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ── Back Link Responsive ──────────────────────────────────────── */
+@media (max-width: 768px) {
+    .tav-back-link {
+        font-size: 12px;
+    }
+    
+    .tav-btn-secondary {
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   DASHBOARD ENHANCEMENTS
+   ══════════════════════════════════════════════════════════════ */
+
+/* Dashboard Fulfillment Items */
+.tav-fulfillment-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 20px;
+    flex-wrap: wrap;
+}
+
+.tav-fulfillment-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.tav-fulfillment-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.tav-fulfillment-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+@media (max-width: 600px) {
+    .tav-fulfillment-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .tav-fulfillment-view-btn {
+        width: 100%;
+        text-align: center;
+    }
+    
+    .tav-fulfillment-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+}
+
+/* Activity List */
+.tav-activity-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.tav-activity-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.tav-activity-label {
+    word-break: break-word;
+}
+
+/* Stats Grid Improvements */
+@media (max-width: 480px) {
+    .tav-stat-card {
+        padding: 16px;
+    }
+    
+    .tav-stat-value {
+        font-size: 24px;
+    }
+    
+    .tav-stat-sublabel {
+        font-size: 10px;
+    }
+}
+
+/* Chart Responsive */
+@media (max-width: 600px) {
+    .tav-chart-canvas-wrap {
+        height: 220px;
+        padding: 8px 12px 0;
+    }
+    
+    .tav-chart-filters {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .tav-chart-btn {
+        flex: 1;
+        text-align: center;
+        padding: 8px 10px;
+        font-size: 11px;
+    }
+    
+    .tav-chart-total {
+        font-size: 22px;
+    }
+    
+    .tav-chart-legend {
+        justify-content: center;
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TABLE ENHANCEMENTS
+   ══════════════════════════════════════════════════════════════ */
+
+/* Touch-friendly table rows */
+.tav-boutique-table tbody tr {
+    min-height: 60px;
+}
+
+/* Text truncation for table cells */
+.tav-cell-secondary,
+.tav-cell-primary {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+    display: inline-block;
+}
+
+/* Better mobile table */
+@media (max-width: 1100px) {
+    .tav-boutique-table th:nth-child(4),
+    .tav-boutique-table td:nth-child(4) {
+        display: none;
+    }
+}
+
+@media (max-width: 900px) {
+    .tav-boutique-table th:nth-child(3),
+    .tav-boutique-table td:nth-child(3),
+    .tav-boutique-table th:nth-child(6),
+    .tav-boutique-table td:nth-child(6) {
+        display: none;
+    }
+}
+
+@media (max-width: 700px) {
+    .tav-boutique-table thead th {
+        padding: 12px 16px;
+        font-size: 10px;
+    }
+    
+    .tav-boutique-table td {
+        padding: 14px 16px;
+    }
+    
+    .tav-boutique-avatar {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .tav-name-text {
+        font-size: 13px;
+    }
+    
+    .tav-cell-secondary {
+        font-size: 12px;
+    }
+    
+    /* Stack name cell on very small screens */
+    .tav-cell-name {
+        gap: 10px;
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   REQUESTS TABLE SPECIFIC
+   ══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 1100px) {
+    .tav-requests-table .tav-col-client {
+        display: none;
+    }
+}
+
+@media (max-width: 900px) {
+    .tav-requests-table .tav-col-due {
+        display: none;
+    }
+}
+
+@media (max-width: 700px) {
+    .tav-requests-table .tav-col-submitted {
+        display: none;
+    }
+    
+    .tav-project-name {
+        font-size: 13px;
+    }
+    
+    .tav-status-badge {
+        font-size: 10px;
+        padding: 3px 8px;
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TOUCH-FRIENDLY IMPROVEMENTS
+   ══════════════════════════════════════════════════════════════ */
+
+/* Minimum touch target size (44px) */
+.tav-btn-icon {
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.tav-checkbox-label {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.tav-action-btn {
+    min-height: 36px;
+}
+
+/* Better spacing for touch */
+@media (max-width: 768px) {
+    .tav-btn-icon {
+        width: 44px;
+        height: 44px;
+    }
+    
+    .tav-action-btn {
+        min-height: 44px;
+        padding: 10px 16px;
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PANEL LIST IMPROVEMENTS
+   ══════════════════════════════════════════════════════════════ */
+
+.tav-panel-list li {
+    display: flex;
+    align-items: center;
+    min-height: 60px;
+}
+
+@media (max-width: 600px) {
+    .tav-panel-list li {
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 14px 16px;
+    }
+    
+    .tav-st-info {
+        flex: 1 1 calc(100% - 60px);
+        min-width: 0;
+    }
+    
+    .tav-st-metrics {
+        width: auto;
+        margin-left: auto;
+    }
+    
+    .tav-st-name {
+        font-size: 13px;
+    }
+    
+    .tav-st-location {
+        font-size: 11px;
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SIDEBAR RAIL ON DASHBOARD
+   ══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 1200px) {
+    .tav-dashboard-rail {
+        order: -1;
+    }
+    
+    .tav-dashboard-rail .tav-panel {
+        max-height: none;
+    }
+    
+    .tav-activity-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   EMPTY STATES
+   ══════════════════════════════════════════════════════════════ */
+
+.tav-empty,
+.tav-empty-state {
+    text-align: center;
+    padding: 32px 20px;
+    color: var(--tav-text-muted);
+    font-size: 14px;
+}
+
+@media (max-width: 600px) {
+    .tav-empty,
+    .tav-empty-state {
+        padding: 24px 16px;
+        font-size: 13px;
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PRINT STYLES
+   ══════════════════════════════════════════════════════════════ */
+
+@media print {
+    .tav-sidebar,
+    .tav-dashboard-rail,
+    .tav-filter-bar,
+    .tav-btn-primary,
+    .tav-btn-secondary,
+    .tav-actions-wrap,
+    .tav-pagination {
+        display: none !important;
+    }
+    
+    .tav-main,
+    .tav-content {
+        margin: 0;
+        padding: 0;
+    }
+    
+    .tav-boutique-table-wrap {
+        overflow: visible;
+        box-shadow: none;
+        border: 1px solid #ccc;
     }
 }

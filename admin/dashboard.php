@@ -207,6 +207,9 @@ function tav_dashboard_on_load(): void
             null
         );
 
+        // Enqueue WordPress media uploader for storyteller form
+        wp_enqueue_media();
+
         wp_enqueue_script(
             'chartjs',
             'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js',
@@ -1346,64 +1349,127 @@ function tav_render_dashboard(): void
     $is_edit_teller = 'edit-teller' === $view;
     $is_fulfill = 'fulfill' === $view;
     $is_settings = 'settings' === $view;
+    $is_notifications = 'notifications' === $view;
+    $pending_requests_count = tav_get_active_requests_count();
 
     ?>
     <div class="tav-dashboard-wrap">
         <main class="tav-main">
 
-            <!-- ═══ SIDEBAR ═══════════════════════════════════ -->
-            <aside class="tav-sidebar">
+            <!-- ═══ SIDEBAR (Single with Collapsed/Expanded States) ═══ -->
+            <aside class="tav-sidebar" id="tav-sidebar">
                 <div class="tav-sidebar-brand">
-                    <div class="tav-sidebar-logo">VA</div>
+                    <div class="tav-sidebar-logo" id="tav-sidebar-toggle" title="<?php esc_attr_e('Toggle Sidebar', 'the-admin-vault'); ?>">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    </div>
                     <div class="tav-sidebar-brand-text">
-                        <span class="tav-sidebar-brand-title"><?php esc_html_e('Admin Vault', 'the-admin-vault'); ?></span>
+                        <span class="tav-sidebar-brand-title"><?php esc_html_e('Verified', 'the-admin-vault'); ?></span>
                         <span class="tav-sidebar-brand-sub"><?php esc_html_e('Storytellers', 'the-admin-vault'); ?></span>
                     </div>
                 </div>
 
-                <div class="tav-sidebar-toggle">
-                    <button id="tav-sidebar-collapse" class="tav-btn-icon" title="Toggle Sidebar">
-                        <span class="dashicons dashicons-menu"></span>
-                    </button>
+                <div class="tav-sidebar-section-label">
+                    <span><?php esc_html_e('GENERAL', 'the-admin-vault'); ?></span>
                 </div>
 
                 <ul class="tav-sidebar-nav">
                     <li>
                         <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=dashboard')); ?>"
-                           class="<?php echo $is_dashboard ? 'active' : ''; ?>">
-                            <span class="dashicons dashicons-chart-area"></span>
-                            <span><?php esc_html_e('Dashboard', 'the-admin-vault'); ?></span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=storytellers')); ?>"
-                           class="<?php echo $is_storytellers || $is_add_teller || $is_edit_teller ? 'active' : ''; ?>">
-                            <span class="dashicons dashicons-groups"></span>
-                            <span><?php esc_html_e('Storytellers', 'the-admin-vault'); ?></span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=clients')); ?>"
-                           class="<?php echo $is_clients ? 'active' : ''; ?>">
-                            <span class="dashicons dashicons-businessperson"></span>
-                            <span><?php esc_html_e('Clients', 'the-admin-vault'); ?></span>
+                           class="<?php echo $is_dashboard ? 'active' : ''; ?>" title="<?php esc_attr_e('Dashboard', 'the-admin-vault'); ?>">
+                            <svg class="tav-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="7" height="9" rx="1"></rect>
+                                <rect x="14" y="3" width="7" height="5" rx="1"></rect>
+                                <rect x="14" y="12" width="7" height="9" rx="1"></rect>
+                                <rect x="3" y="16" width="7" height="5" rx="1"></rect>
+                            </svg>
+                            <span class="tav-nav-text"><?php esc_html_e('Dashboard', 'the-admin-vault'); ?></span>
                         </a>
                     </li>
                     <li>
                         <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=requests')); ?>"
-                           class="<?php echo $is_requests || $is_fulfill ? 'active' : ''; ?>">
-                            <span class="dashicons dashicons-clipboard"></span>
-                            <span><?php esc_html_e('Requests', 'the-admin-vault'); ?></span>
+                           class="<?php echo $is_requests || $is_fulfill ? 'active' : ''; ?>" title="<?php esc_attr_e('Requests', 'the-admin-vault'); ?>">
+                            <svg class="tav-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                            <span class="tav-nav-text"><?php esc_html_e('Requests', 'the-admin-vault'); ?></span>
+                            <?php if ($pending_requests_count > 0): ?>
+                                <span class="tav-nav-badge"><?php echo esc_html($pending_requests_count); ?></span>
+                            <?php endif; ?>
                         </a>
                     </li>
                     <li>
-                        <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=settings')); ?>"
-                           class="<?php echo $is_settings ? 'active' : ''; ?>">
-                            <span class="dashicons dashicons-admin-settings"></span>
-                            <span><?php esc_html_e('Settings', 'the-admin-vault'); ?></span>
+                        <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=storytellers')); ?>"
+                           class="<?php echo $is_storytellers || $is_add_teller || $is_edit_teller ? 'active' : ''; ?>" title="<?php esc_attr_e('Storytellers', 'the-admin-vault'); ?>">
+                            <svg class="tav-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            <span class="tav-nav-text"><?php esc_html_e('Storytellers', 'the-admin-vault'); ?></span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=clients')); ?>"
+                           class="<?php echo $is_clients ? 'active' : ''; ?>" title="<?php esc_attr_e('Clients', 'the-admin-vault'); ?>">
+                            <svg class="tav-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                            </svg>
+                            <span class="tav-nav-text"><?php esc_html_e('Clients', 'the-admin-vault'); ?></span>
                         </a>
                     </li>
                 </ul>
+                
+                <!-- Bottom Section -->
+                <div class="tav-sidebar-bottom-section">
+                    <ul class="tav-sidebar-nav tav-sidebar-nav-bottom">
+                        <li>
+                            <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=notifications')); ?>"
+                               class="<?php echo $is_notifications ? 'active' : ''; ?>" title="<?php esc_attr_e('Notifications', 'the-admin-vault'); ?>">
+                                <svg class="tav-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                                </svg>
+                                <span class="tav-nav-text"><?php esc_html_e('Notifications', 'the-admin-vault'); ?></span>
+                                <?php if ($pending_requests_count > 0): ?>
+                                    <span class="tav-nav-badge"><?php echo esc_html($pending_requests_count); ?></span>
+                                <?php endif; ?>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=settings')); ?>"
+                               class="<?php echo $is_settings ? 'active' : ''; ?>" title="<?php esc_attr_e('Settings', 'the-admin-vault'); ?>">
+                                <svg class="tav-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                                </svg>
+                                <span class="tav-nav-text"><?php esc_html_e('Settings', 'the-admin-vault'); ?></span>
+                            </a>
+                        </li>
+                    </ul>
+                    
+                    <!-- User Profile Card -->
+                    <?php 
+                    $current_user = wp_get_current_user();
+                    $user_name = $current_user->display_name;
+                    $user_email = $current_user->user_email;
+                    ?>
+                    <div class="tav-sidebar-user-card">
+                        <div class="tav-user-avatar">
+                            <?php echo get_avatar(get_current_user_id(), 40); ?>
+                        </div>
+                        <div class="tav-user-info">
+                            <span class="tav-user-name"><?php echo esc_html($user_name); ?></span>
+                            <span class="tav-user-email"><?php echo esc_html($user_email); ?></span>
+                        </div>
+                        <button class="tav-user-dropdown-toggle" type="button">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
             </aside>
 
             <!-- ═══ CONTENT ═══════════════════════════════════ -->
@@ -1422,8 +1488,9 @@ function tav_render_dashboard(): void
                     require_once TAV_PLUGIN_DIR . 'admin/views/fulfillment.php';
                 } elseif ($is_settings) {
                     require_once TAV_PLUGIN_DIR . 'admin/views/settings.php';
+                } elseif ($is_notifications) {
+                    require_once TAV_PLUGIN_DIR . 'admin/views/notifications.php';
                 } else {
-                    // Default or 404
                     require_once TAV_PLUGIN_DIR . 'admin/views/dashboard.php';
                 }
                 ?>
@@ -1431,5 +1498,24 @@ function tav_render_dashboard(): void
             </div><!-- .tav-content -->
         </main>
     </div>
+    
+    <script>
+    (function() {
+        var toggleBtn = document.getElementById('tav-sidebar-toggle');
+        var sidebar = document.getElementById('tav-sidebar');
+        
+        if (toggleBtn && sidebar) {
+            var isCollapsed = localStorage.getItem('tav_sidebar_collapsed') === 'true';
+            if (isCollapsed) {
+                sidebar.classList.add('collapsed');
+            }
+            
+            toggleBtn.addEventListener('click', function() {
+                sidebar.classList.toggle('collapsed');
+                localStorage.setItem('tav_sidebar_collapsed', sidebar.classList.contains('collapsed'));
+            });
+        }
+    })();
+    </script>
     <?php
 }

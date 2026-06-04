@@ -1156,3 +1156,144 @@ function tav_custom_password_reset_email($message, $key, $user_login, $user_data
     ];
     return str_replace(array_keys($replacements), array_values($replacements), $body);
 }
+
+/*--------------------------------------------------------------
+ * 16. Custom Storyteller Form Handler
+ *
+ *  Handles the custom storyteller add/edit form submission
+ *  from the Figma-matched UI.
+ *------------------------------------------------------------*/
+add_action('admin_init', 'tav_handle_storyteller_form_submission');
+
+function tav_handle_storyteller_form_submission(): void
+{
+    if (!isset($_POST['tav_action']) || $_POST['tav_action'] !== 'save_storyteller') {
+        return;
+    }
+
+    if (!isset($_POST['tav_storyteller_nonce']) || !wp_verify_nonce($_POST['tav_storyteller_nonce'], 'tav_save_storyteller')) {
+        wp_die(__('Security check failed.', 'the-admin-vault'));
+    }
+
+    if (!current_user_can('manage_options')) {
+        wp_die(__('You do not have permission to perform this action.', 'the-admin-vault'));
+    }
+
+    $post_id = !empty($_POST['post_id']) ? intval($_POST['post_id']) : 0;
+    $first_name = sanitize_text_field($_POST['first_name'] ?? '');
+    $last_name = sanitize_text_field($_POST['last_name'] ?? '');
+    $full_name = trim($first_name . ' ' . $last_name);
+
+    $post_data = [
+        'post_type'   => 'storyteller',
+        'post_status' => 'publish',
+        'post_title'  => $full_name,
+    ];
+
+    if ($post_id > 0) {
+        $post_data['ID'] = $post_id;
+        $post_id = wp_update_post($post_data);
+    } else {
+        $post_id = wp_insert_post($post_data);
+    }
+
+    if (is_wp_error($post_id) || !$post_id) {
+        wp_die(__('Failed to save storyteller.', 'the-admin-vault'));
+    }
+
+    // Save ACF fields
+    if (function_exists('update_field')) {
+        // Bio
+        update_field('bio', sanitize_textarea_field($_POST['bio'] ?? ''), $post_id);
+
+        // Location
+        update_field('location', sanitize_text_field($_POST['location'] ?? ''), $post_id);
+
+        // Profile Image
+        $profile_image = intval($_POST['profile_image'] ?? 0);
+        if ($profile_image > 0) {
+            update_field('profile_image', $profile_image, $post_id);
+            set_post_thumbnail($post_id, $profile_image);
+        } else {
+            update_field('profile_image', '', $post_id);
+            delete_post_thumbnail($post_id);
+        }
+
+        // Platforms
+        $platforms = [];
+        if (!empty($_POST['platforms']) && is_array($_POST['platforms'])) {
+            foreach ($_POST['platforms'] as $platform) {
+                if (!empty($platform['platform_name']) || !empty($platform['handle'])) {
+                    $platforms[] = [
+                        'platform_name'   => sanitize_text_field($platform['platform_name'] ?? ''),
+                        'handle'          => sanitize_text_field($platform['handle'] ?? ''),
+                        'follower_count'  => intval($platform['follower_count'] ?? 0),
+                        'profile_url'     => esc_url_raw($platform['profile_url'] ?? ''),
+                        'engagement_rate' => floatval($platform['engagement_rate'] ?? 0),
+                    ];
+                }
+            }
+        }
+        update_field('platforms_repeater', $platforms, $post_id);
+
+        // Sample Work
+        $sample_works = [];
+        if (!empty($_POST['sample_work']) && is_array($_POST['sample_work'])) {
+            foreach ($_POST['sample_work'] as $sample) {
+                if (!empty($sample['content_title']) || !empty($sample['url'])) {
+                    $sample_works[] = [
+                        'content_title' => sanitize_text_field($sample['content_title'] ?? ''),
+                        'platform'      => sanitize_text_field($sample['platform'] ?? ''),
+                        'view_count'    => intval($sample['view_count'] ?? 0),
+                        'url'           => esc_url_raw($sample['url'] ?? ''),
+                    ];
+                }
+            }
+        }
+        update_field('sample_work', $sample_works, $post_id);
+
+        // Organization Tags
+        update_field('organization_tags', sanitize_text_field($_POST['organization_tags'] ?? ''), $post_id);
+
+        // Date Added
+        update_field('date_added', sanitize_text_field($_POST['date_added'] ?? ''), $post_id);
+
+        // Is Verified
+        update_field('is_verified', isset($_POST['is_verified']) ? 1 : 0, $post_id);
+    }
+
+    // Save Niches (taxonomy)
+    if (!empty($_POST['niche']) && is_array($_POST['niche'])) {
+        $niche_ids = array_map('intval', $_POST['niche']);
+        wp_set_post_terms($post_id, $niche_ids, 'vs_niche');
+    } else {
+        wp_set_post_terms($post_id, [], 'vs_niche');
+    }
+
+    // Clear ACF cache and trigger engagement rate calculation
+    if (function_exists('acf_flush_value_cache')) {
+        acf_flush_value_cache($post_id);
+    }
+    clean_post_cache($post_id);
+    
+    // Manually calculate and save engagement rate (in case ACF hook doesn't fire)
+    $rates = [];
+    if (!empty($platforms)) {
+        foreach ($platforms as $p) {
+            $rate = floatval($p['engagement_rate'] ?? 0);
+            if ($rate > 0) {
+                $rates[] = $rate;
+            }
+        }
+    }
+    $avg = !empty($rates) ? round(array_sum($rates) / count($rates), 2) : 0.0;
+    update_post_meta($post_id, 'tav_avg_engagement_rate', $avg);
+    
+    // Also trigger ACF save action for any other hooks
+    do_action('acf/save_post', $post_id);
+
+    // Redirect back to storytellers list
+    $redirect_url = admin_url('admin.php?page=tav-dashboard&view=storytellers&saved=1');
+    wp_safe_redirect($redirect_url);
+    exit;
+}

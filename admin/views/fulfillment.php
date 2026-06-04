@@ -103,12 +103,12 @@ $engagement_filter = isset($_GET['s_engagement']) ? sanitize_text_field($_GET['s
     </a>
 </div>
 
-<div class="tav-fulfillment-grid" style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px;">
+<div class="tav-fulfillment-grid">
     
     <!-- Left Column: Brief -->
-    <div class="tav-panel" style="align-self: start;">
+    <div class="tav-panel">
         <div class="tav-panel-header"><h2 class="tav-panel-title"><?php esc_html_e('Client Brief', 'the-admin-vault'); ?></h2></div>
-        <div class="tav-brief-content" style="padding: 20px;">
+        <div class="tav-brief-content">
             <div class="tav-brief-row">
                 <span class="tav-brief-label"><?php esc_html_e('Client', 'the-admin-vault'); ?></span>
                 <span class="tav-brief-value"><?php echo esc_html($client_name); ?></span>
@@ -161,7 +161,7 @@ $engagement_filter = isset($_GET['s_engagement']) ? sanitize_text_field($_GET['s
             </div>
             <hr>
             <h4><?php esc_html_e('Additional Info', 'the-admin-vault'); ?></h4>
-            <div class="tav-brief-text" style="font-size: 13px; color: #666; margin-bottom: 20px;">
+            <div class="tav-brief-text">
                 <?php echo wp_kses_post($additional_info ?: 'None.'); ?>
             </div>
             <hr>
@@ -179,24 +179,24 @@ $engagement_filter = isset($_GET['s_engagement']) ? sanitize_text_field($_GET['s
         </div>
         
         <!-- Search & Filter Bar -->
-        <form method="GET" style="padding: 15px; border-bottom: 1px solid #eee;">
+        <form method="GET" class="tav-fulfillment-search">
             <input type="hidden" name="page" value="<?php echo esc_attr($current_page_slug); ?>">
             <input type="hidden" name="view" value="fulfill">
             <input type="hidden" name="request_id" value="<?php echo esc_attr($req_id); ?>">
 
-            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px;">
-                <input type="text" name="s_term" value="<?php echo esc_attr($search_term); ?>" placeholder="<?php esc_attr_e('Search by name...', 'the-admin-vault'); ?>" style="flex:1; min-width:160px; padding:8px;">
-                <input type="text" name="s_location" value="<?php echo esc_attr($location_filter); ?>" placeholder="<?php esc_attr_e('Location...', 'the-admin-vault'); ?>" style="width:140px; padding:8px;">
+            <div class="tav-fulfillment-search-row">
+                <input type="text" name="s_term" value="<?php echo esc_attr($search_term); ?>" placeholder="<?php esc_attr_e('Search by name...', 'the-admin-vault'); ?>">
+                <input type="text" name="s_location" value="<?php echo esc_attr($location_filter); ?>" placeholder="<?php esc_attr_e('Location...', 'the-admin-vault'); ?>">
 
                 <?php $niches = tav_get_niches(); ?>
-                <select name="s_niche" style="padding:8px;">
+                <select name="s_niche">
                     <option value=""><?php esc_html_e('All Niches', 'the-admin-vault'); ?></option>
                     <?php foreach ($niches as $k => $v): ?>
                         <option value="<?php echo esc_attr($k); ?>" <?php selected($niche_filter, $k); ?>><?php echo esc_html($v); ?></option>
                     <?php endforeach; ?>
                 </select>
 
-                <select name="s_platform" style="padding:8px;">
+                <select name="s_platform">
                     <option value=""><?php esc_html_e('All Platforms', 'the-admin-vault'); ?></option>
                     <?php
                     $platforms = ['instagram' => 'Instagram', 'tiktok' => 'TikTok', 'youtube' => 'YouTube', 'twitter' => 'X / Twitter', 'facebook' => 'Facebook', 'linkedin' => 'LinkedIn'];
@@ -205,7 +205,7 @@ $engagement_filter = isset($_GET['s_engagement']) ? sanitize_text_field($_GET['s
                     <?php endforeach; ?>
                 </select>
 
-                <select name="s_followers" style="padding:8px;">
+                <select name="s_followers">
                         <option value=""><?php esc_html_e('Followers', 'the-admin-vault'); ?></option>
                         <option value="under_10k" <?php selected($followers_filter, 'under_10k'); ?>><?php esc_html_e('Under 10K', 'the-admin-vault'); ?></option>
                         <option value="10k_50k" <?php selected($followers_filter, '10k_50k'); ?>><?php esc_html_e('10K – 50K', 'the-admin-vault'); ?></option>
@@ -213,7 +213,7 @@ $engagement_filter = isset($_GET['s_engagement']) ? sanitize_text_field($_GET['s
                         <option value="100k_plus" <?php selected($followers_filter, '100k_plus'); ?>><?php esc_html_e('100K+', 'the-admin-vault'); ?></option>
                 </select>
 
-                <select name="s_engagement" style="padding:8px;">
+                <select name="s_engagement">
                     <option value=""><?php esc_html_e('Engagement', 'the-admin-vault'); ?></option>
                     <option value="under_2" <?php selected($engagement_filter, 'under_2'); ?>><?php esc_html_e('Under 2%', 'the-admin-vault'); ?></option>
                     <option value="2_5" <?php selected($engagement_filter, '2_5'); ?>><?php esc_html_e('2% – 5%', 'the-admin-vault'); ?></option>
@@ -222,7 +222,7 @@ $engagement_filter = isset($_GET['s_engagement']) ? sanitize_text_field($_GET['s
                 </select>
             </div>
 
-            <div style="display:flex; gap:8px;">
+            <div class="tav-fulfillment-search-row">
                 <button type="submit" class="button button-primary"><?php esc_html_e('Search', 'the-admin-vault'); ?></button>
                 <?php if ($search_term || $niche_filter || $location_filter || $platform_filter || $followers_filter || $engagement_filter): ?>
                     <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=fulfill&request_id=' . $req_id)); ?>" class="button"><?php esc_html_e('Clear Filters', 'the-admin-vault'); ?></a>
@@ -232,9 +232,9 @@ $engagement_filter = isset($_GET['s_engagement']) ? sanitize_text_field($_GET['s
 
         <form method="POST" id="tav-fulfillment-form">
             <?php wp_nonce_field('tav_fulfill_action', 'tav_fulfill_nonce'); ?>
-            <div class="tav-storyteller-list" style="padding: 15px; max-height: 600px; overflow-y: auto;">
+            <div class="tav-storyteller-list">
                 <?php if (!empty($storytellers)): ?>
-                    <ul style="list-style: none; margin: 0; padding: 0;">
+                    <ul>
                         <?php foreach ($storytellers as $st):
                             $is_selected = in_array($st->ID, $assigned_ids);
                             $thumb = get_the_post_thumbnail_url($st->ID, 'thumbnail');
@@ -246,21 +246,21 @@ $engagement_filter = isset($_GET['s_engagement']) ? sanitize_text_field($_GET['s
                             }
                             $followers_display = $total_followers > 0 ? tav_format_metric($total_followers) : '—';
                         ?>
-                            <li style="display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #f0f0f0; <?php echo $is_selected ? 'background: #edfaef;' : ''; ?>">
-                                <input type="checkbox" name="storytellers[]" value="<?php echo $st->ID; ?>" <?php checked($is_selected); ?> style="margin-right: 15px;">
-                                <div style="width: 40px; height: 40px; background: #eee; border-radius: 50%; overflow: hidden; margin-right: 10px;">
+                            <li class="<?php echo $is_selected ? 'selected' : ''; ?>">
+                                <input type="checkbox" name="storytellers[]" value="<?php echo $st->ID; ?>" <?php checked($is_selected); ?>>
+                                <div class="tav-st-thumb">
                                     <?php if ($thumb): ?>
-                                        <img src="<?php echo esc_url($thumb); ?>" style="width: 100%; height: 100%; object-fit: cover;">
+                                        <img src="<?php echo esc_url($thumb); ?>" alt="">
                                     <?php endif; ?>
                                 </div>
-                                <div>
-                                    <strong style="display: block; font-size: 14px;"><?php echo esc_html($st->post_title); ?></strong>
-                                    <span style="font-size: 12px; color: #666;"><?php echo esc_html(get_field('location', $st->ID)); ?></span>
+                                <div class="tav-st-info">
+                                    <strong><?php echo esc_html($st->post_title); ?></strong>
+                                    <span><?php echo esc_html(get_field('location', $st->ID)); ?></span>
                                 </div>
-                                <div style="margin-left: 20px; font-size: 13px; color: #444; min-width: 70px; text-align: right;">
+                                <div class="tav-st-metric">
                                     <?php echo esc_html($followers_display); ?>
                                 </div>
-                                <div style="margin-left: 12px; min-width: 70px; text-align: right;">
+                                <div class="tav-st-metric">
                                     <?php if ($avg_engagement > 0):
                                         $eng_class = $avg_engagement >= 6 ? 'tav-eng-high' : ($avg_engagement >= 3 ? 'tav-eng-mid' : 'tav-eng-low');
                                     ?>
@@ -269,7 +269,7 @@ $engagement_filter = isset($_GET['s_engagement']) ? sanitize_text_field($_GET['s
                                         —
                                     <?php endif; ?>
                                 </div>
-                                <div style="margin-left: auto;">
+                                <div class="tav-st-action">
                                     <button type="button" class="button button-small tav-view-storyteller" data-st-id="<?php echo $st->ID; ?>">
                                         <?php esc_html_e('View', 'the-admin-vault'); ?>
                                     </button>
@@ -278,11 +278,11 @@ $engagement_filter = isset($_GET['s_engagement']) ? sanitize_text_field($_GET['s
                         <?php endforeach; ?>
                     </ul>
                 <?php else: ?>
-                    <p><?php esc_html_e('No storytellers found.', 'the-admin-vault'); ?></p>
+                    <p class="tav-empty"><?php esc_html_e('No storytellers found.', 'the-admin-vault'); ?></p>
                 <?php endif; ?>
             </div>
             
-            <div class="tav-panel-footer" style="text-align: right; padding: 15px; background: #f9f9f9; border-top: 1px solid #eee;">
+            <div class="tav-fulfillment-footer">
                 <div class="tav-selection-counter" id="tav-selection-counter"
                      data-min="<?php echo (int) $selection_limits['min']; ?>"
                      data-max="<?php echo (int) $selection_limits['max']; ?>"
@@ -295,7 +295,7 @@ $engagement_filter = isset($_GET['s_engagement']) ? sanitize_text_field($_GET['s
                         (int) $selection_limits['target']
                     ); ?></span>
                 </div>
-                <p id="tav-selection-error" class="tav-selection-error" style="display:none;color:#b91c1c;font-size:13px;margin:0 0 10px;"></p>
+                <p id="tav-selection-error" class="tav-selection-error"></p>
                 <button type="submit" class="tav-btn-primary" id="tav-save-fulfillment" disabled>
                     <span class="tav-btn-text"><?php esc_html_e('Assign to Project', 'the-admin-vault'); ?></span>
                     <span class="tav-spinner" style="display:none;"></span>
