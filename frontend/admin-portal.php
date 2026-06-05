@@ -26,6 +26,42 @@ function tav_get_admin_portal_url(): string
     return home_url('/admin-dashboard/');
 }
 
+/**
+ * Whether the dashboard is rendering on the front-end portal.
+ */
+function tav_is_frontend_portal_context(): bool
+{
+    return !empty($GLOBALS['tav_frontend_portal']);
+}
+
+/**
+ * Base URL for admin dashboard navigation (portal or wp-admin).
+ */
+function tav_get_dashboard_base_url(): string
+{
+    if (tav_is_frontend_portal_context() || tav_is_admin_portal_page()) {
+        return tav_get_admin_portal_url();
+    }
+
+    return admin_url('admin.php');
+}
+
+/**
+ * Link to a dashboard view.
+ */
+function tav_get_dashboard_view_url(string $view = 'dashboard', array $extra_args = []): string
+{
+    $args = array_merge(['view' => $view], $extra_args);
+
+    if (tav_is_frontend_portal_context() || tav_is_admin_portal_page()) {
+        return add_query_arg($args, tav_get_admin_portal_url());
+    }
+
+    $args['page'] = 'tav-dashboard';
+
+    return add_query_arg($args, admin_url('admin.php'));
+}
+
 function tav_is_admin_portal_page(): bool
 {
     if (is_singular('page')) {
@@ -98,6 +134,34 @@ function tav_enqueue_admin_portal_assets(): void
         'var ajaxurl = ' . wp_json_encode(admin_url('admin-ajax.php')) . ';',
         'before'
     );
+
+    $view = sanitize_key($_GET['view'] ?? 'dashboard');
+    if ($view === 'account-settings' && defined('CCC_PLUGIN_URL') && defined('CCC_VERSION')) {
+        wp_enqueue_style(
+            'ccc-dashboard-admin-account',
+            CCC_PLUGIN_URL . 'assets/css/dashboard.css',
+            ['tav-dashboard'],
+            CCC_VERSION
+        );
+
+        if (sanitize_key($_GET['tab'] ?? 'profile') === 'profile') {
+            wp_enqueue_script(
+                'ccc-account-settings',
+                CCC_PLUGIN_URL . 'assets/js/account-settings.js',
+                [],
+                CCC_VERSION,
+                true
+            );
+
+            wp_localize_script('ccc-account-settings', 'cccAccountSettings', [
+                'ajaxurl'     => admin_url('admin-ajax.php'),
+                'avatarNonce' => wp_create_nonce('ccc_upload_avatar'),
+                'uploading'   => __('Uploading photo…', 'client-command-center'),
+                'success'     => __('Photo updated.', 'client-command-center'),
+                'error'       => __('Could not update photo. Please try again.', 'client-command-center'),
+            ]);
+        }
+    }
 }
 
 function tav_admin_dashboard_shortcode(): string
@@ -119,68 +183,14 @@ function tav_admin_dashboard_shortcode(): string
 
     tav_enqueue_admin_portal_assets();
 
-    $current_page_slug = 'tav-dashboard';
-    $portal_url        = tav_get_admin_portal_url();
+    $GLOBALS['tav_frontend_portal'] = true;
 
     ob_start();
-    ?>
-    <div class="tav-dashboard-wrap tav-front-portal">
-        <main class="tav-main">
-            <aside class="tav-sidebar">
-                <div class="tav-sidebar-brand">
-                    <div class="tav-sidebar-logo">VA</div>
-                    <div class="tav-sidebar-brand-text">
-                        <span class="tav-sidebar-brand-title"><?php esc_html_e('Admin Vault', 'the-admin-vault'); ?></span>
-                        <span class="tav-sidebar-brand-sub"><?php esc_html_e('Storytellers', 'the-admin-vault'); ?></span>
-                    </div>
-                </div>
+    if (function_exists('tav_render_dashboard')) {
+        tav_render_dashboard();
+    }
+    unset($GLOBALS['tav_frontend_portal']);
 
-                <div class="tav-sidebar-toggle">
-                    <button id="tav-sidebar-collapse" class="tav-btn-icon" type="button" title="<?php esc_attr_e('Toggle Sidebar', 'the-admin-vault'); ?>">
-                        <span class="dashicons dashicons-menu"></span>
-                    </button>
-                </div>
-
-                <ul class="tav-sidebar-nav">
-                    <li>
-                        <a href="<?php echo esc_url($portal_url); ?>" class="active">
-                            <span class="dashicons dashicons-chart-area"></span>
-                            <span><?php esc_html_e('Dashboard', 'the-admin-vault'); ?></span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=storytellers')); ?>">
-                            <span class="dashicons dashicons-groups"></span>
-                            <span><?php esc_html_e('Storytellers', 'the-admin-vault'); ?></span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=clients')); ?>">
-                            <span class="dashicons dashicons-businessperson"></span>
-                            <span><?php esc_html_e('Clients', 'the-admin-vault'); ?></span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=requests')); ?>">
-                            <span class="dashicons dashicons-clipboard"></span>
-                            <span><?php esc_html_e('Requests', 'the-admin-vault'); ?></span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=settings')); ?>">
-                            <span class="dashicons dashicons-admin-settings"></span>
-                            <span><?php esc_html_e('Settings', 'the-admin-vault'); ?></span>
-                        </a>
-                    </li>
-                </ul>
-            </aside>
-
-            <div class="tav-content">
-                <?php require TAV_PLUGIN_DIR . 'admin/views/dashboard.php'; ?>
-            </div>
-        </main>
-    </div>
-    <?php
     return ob_get_clean();
 }
 add_shortcode('tav_admin_dashboard', 'tav_admin_dashboard_shortcode');

@@ -4021,7 +4021,411 @@
     }
 }
 
-/* ── Settings Page ─────────────────────────────────────────────── */
+/* ── Email Templates Settings (Figma) ──────────────────────────── */
+.tav-breadcrumb {
+    margin: 0 0 8px;
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.tav-email-settings-header .tav-page-title {
+    margin-bottom: 24px;
+}
+
+.tav-settings-notice {
+    margin: 0 0 20px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.tav-settings-notice-success {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+}
+
+.tav-email-settings-wrap {
+    max-width: 100%;
+}
+
+.tav-email-pill-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 24px;
+}
+
+.tav-email-pill-tab {
+    appearance: none;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    color: #0d9488;
+    border-radius: 999px;
+    padding: 10px 22px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s, color .15s, border-color .15s;
+    font-family: inherit;
+}
+
+.tav-email-pill-tab:hover {
+    border-color: #0d9488;
+}
+
+.tav-email-pill-tab.is-active {
+    background: #0d9488;
+    border-color: #0d9488;
+    color: #fff;
+}
+
+.tav-email-settings-card {
+    background: #fff;
+    border: 1px solid #e8edf2;
+    border-radius: 12px;
+    padding: 28px 32px 24px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.tav-email-variables {
+    margin-bottom: 28px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.tav-email-variables-title {
+    margin: 0 0 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.tav-email-variables-desc {
+    margin: 0 0 14px;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.tav-email-variable-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.tav-email-chip {
+    appearance: none;
+    border: 1px solid #99f6e4;
+    background: #f0fdfa;
+    color: #0d9488;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    cursor: pointer;
+    transition: background .15s;
+}
+
+.tav-email-chip:hover,
+.tav-email-chip.is-copied {
+    background: #ccfbf1;
+}
+
+.tav-email-field {
+    margin-bottom: 22px;
+}
+
+.tav-email-field-label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.tav-email-field-hint {
+    margin: -4px 0 10px;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.tav-email-input,
+.tav-email-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 14px;
+    font-family: inherit;
+    background: #f8fafc;
+    color: #1e293b;
+}
+
+.tav-email-textarea {
+    min-height: 220px;
+    line-height: 1.6;
+    resize: vertical;
+}
+
+.tav-email-input:focus,
+.tav-email-textarea:focus {
+    outline: none;
+    border-color: #0d9488;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
+}
+
+.tav-email-settings-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 8px;
+    padding-top: 20px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.tav-btn-outline {
+    background: #fff !important;
+    border: 1px solid #0d9488 !important;
+    color: #0d9488 !important;
+}
+
+.tav-btn-outline:hover {
+    background: #f0fdfa !important;
+}
+
+.tav-email-settings-meta {
+    margin-top: 16px;
+    font-size: 13px;
+}
+
+.tav-email-settings-meta a {
+    color: #0d9488;
+    text-decoration: none;
+}
+
+.tav-email-settings-meta a:hover {
+    text-decoration: underline;
+}
+
+.tav-email-preview-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.tav-email-preview-modal[hidden] {
+    display: none !important;
+}
+
+.tav-email-preview-dialog {
+    background: #fff;
+    border-radius: 12px;
+    padding: 28px 32px;
+    width: 100%;
+    max-width: 640px;
+    max-height: 85vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
+}
+
+.tav-email-preview-close {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    border: none;
+    background: none;
+    font-size: 24px;
+    color: #94a3b8;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.tav-email-preview-heading {
+    margin: 0 0 18px;
+    font-size: 18px;
+}
+
+.tav-email-preview-meta {
+    font-size: 13px;
+    color: #475569;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.tav-email-preview-meta p {
+    margin: 0 0 6px;
+}
+
+.tav-email-preview-body {
+    font-size: 14px;
+    line-height: 1.7;
+    color: #334155;
+}
+
+/* ── Admin account settings (My Profile / Password) ───────────── */
+.tav-sidebar-nav-profile {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.tav-admin-account-wrap {
+    display: flex;
+    gap: 28px;
+    align-items: flex-start;
+}
+
+.tav-admin-account-sidebar {
+    flex: 0 0 200px;
+    background: #fff;
+    border: 1px solid #e8edf2;
+    border-radius: 12px;
+    padding: 20px 16px;
+}
+
+.tav-admin-account-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tav-admin-account-tab {
+    display: block;
+    text-align: center;
+    padding: 10px 18px;
+    border-radius: 999px;
+    border: 1px solid #e2e8f0;
+    color: #0d9488;
+    font-weight: 600;
+    font-size: 14px;
+    text-decoration: none;
+    transition: background .15s, color .15s, border-color .15s;
+}
+
+.tav-admin-account-tab:hover {
+    border-color: #0d9488;
+}
+
+.tav-admin-account-tab.is-active {
+    background: #0d9488;
+    border-color: #0d9488;
+    color: #fff;
+}
+
+.tav-admin-account-signout {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 16px;
+    color: #0d9488;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.tav-admin-account-content {
+    flex: 1;
+    min-width: 0;
+    background: #fff;
+    border: 1px solid #e8edf2;
+    border-radius: 12px;
+    padding: 28px 32px;
+}
+
+.tav-admin-account-panel-title {
+    margin: 0 0 6px;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.tav-admin-account-panel-desc {
+    margin: 0 0 20px;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.tav-admin-profile-summary {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.tav-admin-profile-summary .tav-admin-profile-handle {
+    display: block;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.tav-admin-um-account .um-account-side,
+.tav-admin-um-account .um-account-nav,
+.tav-admin-um-account .um-account-heading {
+    display: none !important;
+}
+
+.tav-admin-um-account input[type="text"],
+.tav-admin-um-account input[type="email"],
+.tav-admin-um-account input[type="password"],
+.tav-admin-um-account textarea,
+.tav-admin-um-account select {
+    width: 100%;
+    max-width: 100%;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: #f8fafc;
+}
+
+.tav-admin-um-account input[type="submit"],
+.tav-admin-um-account .um-button {
+    background: #0d9488 !important;
+    border-color: #0d9488 !important;
+    border-radius: 8px !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+}
+
+@media (max-width: 768px) {
+    .tav-admin-account-wrap {
+        flex-direction: column;
+    }
+
+    .tav-admin-account-sidebar {
+        width: 100%;
+        flex: none;
+    }
+
+    .tav-admin-account-nav {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .tav-email-settings-card {
+        padding: 20px 16px;
+    }
+
+    .tav-email-settings-footer {
+        flex-direction: column;
+    }
+
+    .tav-email-settings-footer .tav-btn {
+        width: 100%;
+    }
+}
+
+/* ── Settings Page (legacy) ──────────────────────────────────── */
 .tav-settings-form-panel {
     padding: 20px;
 }
