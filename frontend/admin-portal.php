@@ -62,6 +62,54 @@ function tav_get_dashboard_view_url(string $view = 'dashboard', array $extra_arg
     return add_query_arg($args, admin_url('admin.php'));
 }
 
+/**
+ * Prepare Ultimate Member account tab rendering on the operator dashboard.
+ */
+function tav_prepare_um_account_tab(string $um_tab): array
+{
+    $args = ['tab' => $um_tab];
+
+    if (!function_exists('UM') || !is_object(UM()->account())) {
+        return $args;
+    }
+
+    $user_id = get_current_user_id();
+    if ($user_id && function_exists('um_fetch_user')) {
+        um_fetch_user($user_id);
+    }
+
+    $um_fields = UM()->fields();
+    if ($um_fields) {
+        $um_fields->set_mode    = 'account';
+        $um_fields->editing     = true;
+        $um_fields->global_args = ['mode' => 'account'];
+    }
+
+    try {
+        UM()->account()->init_tabs($args);
+    } catch (\Throwable $e) {
+        // Tabs stay empty; native fallback form will render.
+    }
+
+    UM()->account()->current_tab = $um_tab;
+
+    return $args;
+}
+
+/**
+ * Get initialized UM account tabs (safe array).
+ */
+function tav_get_um_account_tabs(): array
+{
+    if (!function_exists('UM') || !is_object(UM()->account())) {
+        return [];
+    }
+
+    $tabs = UM()->account()->tabs;
+
+    return is_array($tabs) ? $tabs : [];
+}
+
 function tav_is_admin_portal_page(): bool
 {
     if (is_singular('page')) {
@@ -136,15 +184,24 @@ function tav_enqueue_admin_portal_assets(): void
     );
 
     $view = sanitize_key($_GET['view'] ?? 'dashboard');
-    if ($view === 'account-settings' && defined('CCC_PLUGIN_URL') && defined('CCC_VERSION')) {
-        wp_enqueue_style(
-            'ccc-dashboard-admin-account',
-            CCC_PLUGIN_URL . 'assets/css/dashboard.css',
-            ['tav-dashboard'],
-            CCC_VERSION
-        );
+    if ($view === 'account-settings') {
+        if (function_exists('UM')) {
+            wp_enqueue_script('um_account');
+            wp_enqueue_style('um_account');
+            wp_enqueue_style('um_default_css');
+        }
 
-        if (sanitize_key($_GET['tab'] ?? 'profile') === 'profile') {
+        if (defined('CCC_PLUGIN_URL') && defined('CCC_VERSION')) {
+            wp_enqueue_style(
+                'ccc-dashboard-admin-account',
+                CCC_PLUGIN_URL . 'assets/css/dashboard.css',
+                ['tav-dashboard'],
+                CCC_VERSION
+            );
+        }
+
+        if (defined('CCC_PLUGIN_URL') && defined('CCC_VERSION')
+            && sanitize_key($_GET['tab'] ?? 'profile') === 'profile') {
             wp_enqueue_script(
                 'ccc-account-settings',
                 CCC_PLUGIN_URL . 'assets/js/account-settings.js',
@@ -249,6 +306,25 @@ function tav_admin_portal_hide_page_title(bool $show): bool
     return $show;
 }
 add_filter('hello_elementor_page_title', 'tav_admin_portal_hide_page_title');
+
+/**
+ * Process dashboard POST actions on the front-end portal (fulfillment, etc.).
+ */
+function tav_admin_portal_handle_post_actions(): void
+{
+    if (!tav_is_admin_portal_page()) {
+        return;
+    }
+
+    if (!is_user_logged_in() || !tav_is_operator()) {
+        return;
+    }
+
+    if (function_exists('tav_process_fulfillment_submission')) {
+        tav_process_fulfillment_submission();
+    }
+}
+add_action('template_redirect', 'tav_admin_portal_handle_post_actions', 0);
 
 function tav_admin_portal_access_guard(): void
 {

@@ -323,9 +323,9 @@ $tab_labels = [
         '{{site_name}}': <?php echo wp_json_encode($preview_site_name); ?>,
         '{{storyteller_list}}': '  • Sarah Miller\n  • David Chen\n  • Elena Kovac',
         '{{client_email}}': 'client@example.org',
-        '{{admin_url}}': <?php echo wp_json_encode(admin_url('admin.php?page=tav-dashboard&view=requests')); ?>,
+        '{{admin_url}}': <?php echo wp_json_encode(tav_get_dashboard_view_url('requests')); ?>,
         '{{order_url}}': <?php echo wp_json_encode(admin_url('post.php?post=123&action=edit')); ?>,
-        '{{fulfill_url}}': <?php echo wp_json_encode(admin_url('admin.php?page=tav-dashboard&view=fulfill&request_id=123')); ?>,
+        '{{fulfill_url}}': <?php echo wp_json_encode(tav_get_dashboard_view_url('fulfill', ['request_id' => 123])); ?>,
     };
 
     var form = document.getElementById('tav-email-settings-form');

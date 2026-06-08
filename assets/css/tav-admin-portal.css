@@ -4,46 +4,79 @@ body.tav-admin-portal-page {
     margin: 0;
     padding: 0;
     background: var(--tav-bg, #eef2f6);
+    overflow-x: hidden;
 }
 
 body.tav-admin-portal-page #wpadminbar {
     display: none !important;
 }
 
-.tav-front-portal.tav-dashboard-wrap {
+.tav-front-portal.tav-dashboard-wrap,
+body.tav-admin-portal-page .tav-dashboard-wrap {
     margin: 0;
     min-height: 100vh;
-}
-
-.tav-front-portal .tav-sidebar {
-    width: 72px;
-}
-
-.tav-front-portal .tav-sidebar.collapsed {
-    width: 72px;
-}
-
-.tav-front-portal .tav-sidebar-brand {
-    justify-content: center;
-    padding: 20px 12px;
-}
-
-.tav-front-portal .tav-sidebar-brand-text,
-.tav-front-portal .tav-sidebar-nav a span:not(.dashicons) {
-    display: none;
-}
-
-.tav-front-portal .tav-sidebar-nav a {
-    justify-content: center;
-    padding: 12px 0;
-}
-
-.tav-front-portal .tav-sidebar-toggle {
-    display: none;
+    width: 100%;
 }
 
 .tav-front-portal .tav-content {
     padding: 28px 32px 48px;
+}
+
+/* Neutralize theme / Elementor borders on dashboard UI */
+body.tav-admin-portal-page .tav-dashboard-wrap,
+.tav-front-portal.tav-dashboard-wrap {
+    isolation: isolate;
+}
+
+body.tav-admin-portal-page .tav-dashboard-wrap button,
+body.tav-admin-portal-page .tav-dashboard-wrap input,
+body.tav-admin-portal-page .tav-dashboard-wrap textarea,
+body.tav-admin-portal-page .tav-dashboard-wrap select,
+.tav-front-portal.tav-dashboard-wrap button,
+.tav-front-portal.tav-dashboard-wrap input,
+.tav-front-portal.tav-dashboard-wrap textarea,
+.tav-front-portal.tav-dashboard-wrap select {
+    box-shadow: none;
+    outline: none;
+}
+
+body.tav-admin-portal-page .tav-dashboard-wrap input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
+body.tav-admin-portal-page .tav-dashboard-wrap textarea,
+body.tav-admin-portal-page .tav-dashboard-wrap select,
+.tav-front-portal.tav-dashboard-wrap input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
+.tav-front-portal.tav-dashboard-wrap textarea,
+.tav-front-portal.tav-dashboard-wrap select {
+    border: 1px solid var(--tav-border, #e2e8f0) !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+}
+
+body.tav-admin-portal-page .tav-dashboard-wrap .tav-btn,
+body.tav-admin-portal-page .tav-dashboard-wrap .tav-email-pill-tab,
+body.tav-admin-portal-page .tav-dashboard-wrap .tav-email-chip,
+body.tav-admin-portal-page .tav-dashboard-wrap .tav-sidebar-collapse-btn,
+.tav-front-portal.tav-dashboard-wrap .tav-btn,
+.tav-front-portal.tav-dashboard-wrap .tav-email-pill-tab,
+.tav-front-portal.tav-dashboard-wrap .tav-email-chip,
+.tav-front-portal.tav-dashboard-wrap .tav-sidebar-collapse-btn {
+    border-color: transparent;
+}
+
+body.tav-admin-portal-page .tav-dashboard-wrap .tav-btn-outline,
+.tav-front-portal.tav-dashboard-wrap .tav-btn-outline {
+    border: 1px solid var(--tav-border, #e2e8f0) !important;
+}
+
+body.tav-admin-portal-page .tav-dashboard-wrap .tav-email-pill-tab.is-active,
+.tav-front-portal.tav-dashboard-wrap .tav-email-pill-tab.is-active {
+    border-color: var(--tav-accent, #269EB2) !important;
+}
+
+body.tav-admin-portal-page .tav-dashboard-wrap .tav-email-input,
+body.tav-admin-portal-page .tav-dashboard-wrap .tav-email-textarea,
+.tav-front-portal.tav-dashboard-wrap .tav-email-input,
+.tav-front-portal.tav-dashboard-wrap .tav-email-textarea {
+    border: 1px solid #e2e8f0 !important;
 }
 
 .tav-admin-portal-message {
@@ -63,41 +96,32 @@ body.tav-admin-portal-page #wpadminbar {
     color: #64748b;
 }
 
-.tav-sidebar-user-card {
-    position: relative;
-}
-
-.tav-user-account-menu {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: calc(100% + 8px);
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
-    padding: 6px;
-    z-index: 20;
-}
-
-.tav-user-account-menu a {
-    display: block;
-    padding: 10px 12px;
-    border-radius: 8px;
-    color: #0f766e;
-    text-decoration: none;
-    font-size: 13px;
-    font-weight: 600;
-}
-
-.tav-user-account-menu a:hover {
-    background: #f0fdfa;
-}
-
-.ccc-admin-account-settings .ccc-account-card-wrap {
-    margin-top: 0;
-}
-
 .ccc-admin-account-settings .ccc-account-layout {
     align-items: flex-start;
+}
+
+@media (max-width: 960px) {
+    .tav-front-portal .tav-main {
+        margin-left: var(--tav-sidebar-collapsed-w, 68px);
+    }
+
+    .tav-front-portal .tav-main:has(.tav-sidebar:not(.collapsed)),
+    .tav-front-portal .tav-dashboard-wrap:not(.is-sidebar-collapsed) .tav-main {
+        margin-left: var(--tav-sidebar-w, 240px);
+    }
+
+    .tav-front-portal .tav-content {
+        padding: 20px 16px 40px;
+    }
+}
+
+@media (max-width: 640px) {
+    .tav-front-portal .tav-main,
+    .tav-front-portal .tav-dashboard-wrap.is-sidebar-collapsed .tav-main {
+        margin-left: var(--tav-sidebar-collapsed-w, 68px);
+    }
+
+    .tav-front-portal .tav-content {
+        padding: 16px 12px 32px;
+    }
 }

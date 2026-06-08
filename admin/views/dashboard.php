@@ -13,15 +13,8 @@ $activity_feed   = tav_get_activity_feed(12);
 $chart_data      = tav_get_revenue_chart_data('30days');
 $pending_fulfillment = tav_get_pending_fulfillment_requests(5);
 
-$fulfill_base = isset($current_page_slug)
-    ? admin_url('admin.php?page=' . $current_page_slug . '&view=fulfill&request_id=')
-    : admin_url('admin.php?page=tav-dashboard&view=fulfill&request_id=');
-$requests_url = isset($current_page_slug)
-    ? admin_url('admin.php?page=' . $current_page_slug . '&view=requests')
-    : admin_url('admin.php?page=tav-dashboard&view=requests');
-$storytellers_url = isset($current_page_slug)
-    ? admin_url('admin.php?page=' . $current_page_slug . '&view=storytellers')
-    : admin_url('admin.php?page=tav-dashboard&view=storytellers');
+$requests_url = tav_get_dashboard_view_url('requests');
+$storytellers_url = tav_get_dashboard_view_url('storytellers');
 ?>
 
 <div class="tav-dash-topbar">
@@ -138,7 +131,7 @@ $storytellers_url = isset($current_page_slug)
                                     <span class="tav-pill tav-fulfillment-pill" style="--pill-fg:<?php echo esc_attr($pill['fg']); ?>;--pill-bg:<?php echo esc_attr($pill['bg']); ?>;"><?php echo esc_html($pill['label']); ?></span>
                                 </p>
                             </div>
-                            <a href="<?php echo esc_url($fulfill_base . (int) $item['id']); ?>" class="tav-fulfillment-view-btn">
+                            <a href="<?php echo esc_url(tav_get_dashboard_view_url('fulfill', ['request_id' => (int) $item['id']])); ?>" class="tav-fulfillment-view-btn">
                                 <?php esc_html_e('View', 'the-admin-vault'); ?>
                             </a>
                         </li>

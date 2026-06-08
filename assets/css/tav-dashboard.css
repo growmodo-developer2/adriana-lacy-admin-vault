@@ -12,6 +12,7 @@
     --tav-sidebar-text: rgba(255, 255, 255, .85);
     --tav-sidebar-text-active: #269EB2;
     --tav-accent: #269EB2;
+    --tav-accent-yellow: #FFE45C;
     --tav-accent-green: #22c55e;
     --tav-bg: #eef2f6;
     --tav-card-bg: #ffffff;
@@ -40,14 +41,24 @@
 
 .tav-dashboard-wrap {
     display: flex;
-    min-height: calc(100vh - 32px);
-    /* minus WP admin bar */
+    min-height: 100vh;
     margin: -10px 0 0 -20px;
     font-family: var(--tav-font);
     background: var(--tav-bg);
     color: var(--tav-text-primary);
     -webkit-font-smoothing: antialiased;
-    overflow: visible; /* Required for sticky sidebar to work */
+    --tav-current-sidebar-w: var(--tav-sidebar-w);
+}
+
+.tav-dashboard-wrap:has(.tav-sidebar.collapsed),
+.tav-dashboard-wrap.is-sidebar-collapsed {
+    --tav-current-sidebar-w: var(--tav-sidebar-collapsed-w);
+}
+
+.tav-front-portal.tav-dashboard-wrap,
+body.tav-admin-portal-page .tav-dashboard-wrap {
+    margin: 0;
+    min-height: 100vh;
 }
 
 /* ── Sidebar ───────────────────────────────────────────────── */
@@ -57,13 +68,22 @@
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
-    transition: width .3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: width .25s cubic-bezier(0.4, 0, 0.2, 1);
     position: sticky;
     top: 0;
     height: 100vh;
+    max-height: 100vh;
     overflow-y: auto;
     overflow-x: hidden;
     z-index: 100;
+}
+
+.tav-front-portal .tav-sidebar,
+body.tav-admin-portal-page .tav-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 200;
 }
 
 .tav-sidebar.collapsed {
@@ -88,29 +108,106 @@
     background: rgba(255, 255, 255, .3);
 }
 
+.tav-sidebar-header {
+    position: relative;
+    flex-shrink: 0;
+    min-height: 72px;
+    padding: 16px 10px 12px;
+}
+
 .tav-sidebar-brand {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 24px 20px 20px;
+    gap: 10px;
+    padding: 0 42px 0 6px;
+    min-height: 42px;
+    transition: opacity .2s ease;
 }
 
 .tav-sidebar-logo {
     width: 42px;
     height: 42px;
     border-radius: 12px;
-    background: rgba(255, 255, 255, .15);
+    background: var(--tav-accent-yellow, #FFE45C);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #fff;
+    color: var(--tav-dark, #283435);
     flex-shrink: 0;
+}
+
+.tav-sidebar-logo-mark {
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+}
+
+.tav-sidebar-collapse-btn {
+    position: absolute;
+    top: 18px;
+    right: 10px;
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
+    flex-shrink: 0;
     transition: background 0.2s ease;
+    padding: 0;
+}
+
+.tav-sidebar-collapse-btn:hover {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+.tav-sidebar-collapse-btn:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.85);
+    outline-offset: 2px;
+}
+
+.tav-collapse-icon {
+    display: block;
+}
+
+.tav-collapse-icon--expand {
+    display: none;
+}
+
+.tav-sidebar.collapsed .tav-sidebar-brand {
+    opacity: 0;
+    visibility: hidden;
+    height: 0;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+.tav-sidebar.collapsed .tav-sidebar-header {
+    min-height: 56px;
+}
+
+.tav-sidebar.collapsed .tav-sidebar-collapse-btn {
+    top: 12px;
+    right: 8px;
+    transform: none;
+}
+
+.tav-sidebar.collapsed .tav-collapse-icon--collapse {
+    display: none;
+}
+
+.tav-sidebar.collapsed .tav-collapse-icon--expand {
+    display: block;
 }
 
 .tav-sidebar-logo:hover {
-    background: rgba(255, 255, 255, .25);
+    background: var(--tav-accent, #FFE45C);
 }
 
 .tav-sidebar-logo svg {
@@ -181,15 +278,10 @@
 }
 
 #tav-sidebar-collapse {
-    background: transparent;
-    color: var(--tav-sidebar-text);
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
     border: none;
     cursor: pointer;
-}
-
-#tav-sidebar-collapse:hover {
-    color: #fff;
-    background: var(--tav-sidebar-hover);
 }
 
 /* ── Sidebar Nav ───────────────────────────────────────────── */
@@ -382,6 +474,26 @@
     padding: 10px;
     background: rgba(255,255,255,0.1);
     border-radius: 10px;
+    text-decoration: none;
+    transition: background 0.15s ease;
+}
+
+.tav-sidebar-user-card:hover {
+    background: rgba(255,255,255,0.18);
+}
+
+.tav-sidebar-user-card.is-active,
+.tav-sidebar-user-card:focus-visible {
+    background: rgba(255,255,255,0.95);
+    outline: none;
+}
+
+.tav-sidebar-user-card.is-active .tav-user-name {
+    color: var(--tav-accent, #269EB2);
+}
+
+.tav-sidebar-user-card.is-active .tav-user-email {
+    color: rgba(38, 158, 178, 0.75);
 }
 
 .tav-user-avatar {
@@ -422,19 +534,6 @@
     text-overflow: ellipsis;
 }
 
-.tav-user-dropdown-toggle {
-    background: none;
-    border: none;
-    padding: 4px;
-    color: rgba(255,255,255,0.6);
-    cursor: pointer;
-    transition: color 0.15s ease;
-}
-
-.tav-user-dropdown-toggle:hover {
-    color: #fff;
-}
-
 /* Collapsed state for bottom section */
 .tav-sidebar.collapsed .tav-sidebar-bottom-section {
     padding: 16px 4px;
@@ -445,8 +544,7 @@
     padding: 8px;
 }
 
-.tav-sidebar.collapsed .tav-user-info,
-.tav-sidebar.collapsed .tav-user-dropdown-toggle {
+.tav-sidebar.collapsed .tav-user-info {
     display: none;
 }
 
@@ -461,14 +559,20 @@
     display: flex;
     min-width: 0;
     min-height: 100vh;
-    overflow: visible; /* Required for sticky sidebar to work */
+}
+
+.tav-front-portal .tav-main,
+body.tav-admin-portal-page .tav-main {
+    margin-left: var(--tav-current-sidebar-w, var(--tav-sidebar-w));
+    transition: margin-left .25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .tav-content {
     flex: 1;
     padding: 32px 40px 60px;
     min-width: 0;
-    overflow-y: auto;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .tav-page-header {
@@ -490,6 +594,30 @@
 }
 
 /* ── Buttons & Actions ─────────────────────────────────────── */
+.tav-btn {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: none;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2;
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: none;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+
+.tav-btn:focus,
+.tav-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(38, 158, 178, 0.18);
+}
+
 .tav-header-actions {
     display: flex;
     align-items: center;
@@ -504,18 +632,19 @@
     background: var(--tav-accent);
     color: #fff;
     padding: 10px 20px;
+    border: none;
     border-radius: 8px;
     font-weight: 600;
     font-size: 13.5px;
     text-decoration: none;
-    transition: all .2s ease;
-    box-shadow: 0 4px 12px rgba(56, 189, 248, .2);
+    transition: background .2s ease;
+    box-shadow: none;
 }
 
 .tav-btn-primary:hover {
-    background: #0ea5e9;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(56, 189, 248, .3);
+    background: #1e8599;
+    transform: none;
+    box-shadow: none;
 }
 
 .tav-btn-primary:disabled {
@@ -1112,7 +1241,7 @@
 }
 
 @media (max-width: 960px) {
-    .tav-sidebar {
+    .tav-dashboard-wrap:not(.tav-front-portal) .tav-sidebar {
         display: none;
     }
 
@@ -3652,12 +3781,13 @@
     border: 1px solid var(--tav-border);
     color: var(--tav-text-primary);
     padding: 8px 16px;
-    border-radius: 6px;
+    border-radius: 8px;
     font-size: 14px;
     font-weight: 500;
     text-decoration: none;
     cursor: pointer;
-    transition: all .15s;
+    transition: background .15s ease, border-color .15s ease;
+    box-shadow: none;
 }
 
 .tav-btn-outline:hover {
@@ -4042,8 +4172,14 @@
 
 .tav-settings-notice-success {
     background: #ecfdf5;
-    border: 1px solid #a7f3d0;
+    border: none;
     color: #065f46;
+}
+
+.tav-settings-notice-error {
+    background: #fef2f2;
+    border: none;
+    color: #991b1b;
 }
 
 .tav-email-settings-wrap {
@@ -4059,9 +4195,9 @@
 
 .tav-email-pill-tab {
     appearance: none;
-    border: 1px solid #e2e8f0;
-    background: #fff;
-    color: #0d9488;
+    border: 1px solid transparent;
+    background: #f8fafc;
+    color: #475569;
     border-radius: 999px;
     padding: 10px 22px;
     font-size: 14px;
@@ -4069,24 +4205,26 @@
     cursor: pointer;
     transition: background .15s, color .15s, border-color .15s;
     font-family: inherit;
+    box-shadow: none;
 }
 
 .tav-email-pill-tab:hover {
-    border-color: #0d9488;
+    background: #f1f5f9;
+    color: #0f766e;
 }
 
 .tav-email-pill-tab.is-active {
-    background: #0d9488;
-    border-color: #0d9488;
+    background: var(--tav-accent);
+    border-color: var(--tav-accent);
     color: #fff;
 }
 
 .tav-email-settings-card {
     background: #fff;
-    border: 1px solid #e8edf2;
+    border: none;
     border-radius: 12px;
     padding: 28px 32px 24px;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 .tav-email-variables {
@@ -4116,20 +4254,21 @@
 
 .tav-email-chip {
     appearance: none;
-    border: 1px solid #99f6e4;
-    background: #f0fdfa;
-    color: #0d9488;
+    border: none;
+    background: #f1f5f9;
+    color: #0f766e;
     border-radius: 6px;
     padding: 6px 12px;
     font-size: 12px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     cursor: pointer;
     transition: background .15s;
+    box-shadow: none;
 }
 
 .tav-email-chip:hover,
 .tav-email-chip.is-copied {
-    background: #ccfbf1;
+    background: #e2e8f0;
 }
 
 .tav-email-field {
@@ -4159,8 +4298,9 @@
     padding: 12px 14px;
     font-size: 14px;
     font-family: inherit;
-    background: #f8fafc;
+    background: #fff;
     color: #1e293b;
+    box-shadow: none;
 }
 
 .tav-email-textarea {
@@ -4172,9 +4312,9 @@
 .tav-email-input:focus,
 .tav-email-textarea:focus {
     outline: none;
-    border-color: #0d9488;
+    border-color: var(--tav-accent);
     background: #fff;
-    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
+    box-shadow: 0 0 0 3px rgba(38, 158, 178, 0.12);
 }
 
 .tav-email-settings-footer {
@@ -4186,14 +4326,21 @@
     border-top: 1px solid #f1f5f9;
 }
 
-.tav-btn-outline {
-    background: #fff !important;
-    border: 1px solid #0d9488 !important;
-    color: #0d9488 !important;
+.tav-email-settings-footer .tav-btn-outline {
+    background: #fff;
+    border: 1px solid var(--tav-border);
+    color: var(--tav-text-primary);
 }
 
-.tav-btn-outline:hover {
-    background: #f0fdfa !important;
+.tav-email-settings-footer .tav-btn-outline:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.tav-email-settings-footer .tav-btn-primary {
+    background: var(--tav-accent);
+    color: #fff;
+    border: none;
 }
 
 .tav-email-settings-meta {
@@ -4288,9 +4435,10 @@
 .tav-admin-account-sidebar {
     flex: 0 0 200px;
     background: #fff;
-    border: 1px solid #e8edf2;
+    border: none;
     border-radius: 12px;
     padding: 20px 16px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 .tav-admin-account-nav {
@@ -4304,21 +4452,21 @@
     text-align: center;
     padding: 10px 18px;
     border-radius: 999px;
-    border: 1px solid #e2e8f0;
-    color: #0d9488;
+    border: none;
+    background: #f8fafc;
+    color: var(--tav-accent, #269EB2);
     font-weight: 600;
     font-size: 14px;
     text-decoration: none;
-    transition: background .15s, color .15s, border-color .15s;
+    transition: background .15s, color .15s;
 }
 
 .tav-admin-account-tab:hover {
-    border-color: #0d9488;
+    background: #eef2f6;
 }
 
 .tav-admin-account-tab.is-active {
-    background: #0d9488;
-    border-color: #0d9488;
+    background: var(--tav-accent, #269EB2);
     color: #fff;
 }
 
@@ -4327,7 +4475,7 @@
     align-items: center;
     gap: 6px;
     margin-top: 16px;
-    color: #0d9488;
+    color: var(--tav-accent, #269EB2);
     font-size: 13px;
     font-weight: 600;
     text-decoration: none;
@@ -4337,9 +4485,10 @@
     flex: 1;
     min-width: 0;
     background: #fff;
-    border: 1px solid #e8edf2;
+    border: none;
     border-radius: 12px;
     padding: 28px 32px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 .tav-admin-account-panel-title {
@@ -4375,6 +4524,13 @@
     display: none !important;
 }
 
+.tav-admin-um-account .um-field-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 6px;
+}
+
 .tav-admin-um-account input[type="text"],
 .tav-admin-um-account input[type="email"],
 .tav-admin-um-account input[type="password"],
@@ -4385,16 +4541,77 @@
     border: 1px solid #e2e8f0;
     border-radius: 8px;
     padding: 10px 12px;
-    background: #f8fafc;
+    background: #fff;
+    box-shadow: none;
+}
+
+.tav-admin-um-account input[type="text"]:focus,
+.tav-admin-um-account input[type="email"]:focus,
+.tav-admin-um-account input[type="password"]:focus,
+.tav-admin-um-account textarea:focus,
+.tav-admin-um-account select:focus {
+    outline: none;
+    border-color: var(--tav-accent, #269EB2);
+    box-shadow: 0 0 0 3px rgba(38, 158, 178, 0.12);
 }
 
 .tav-admin-um-account input[type="submit"],
 .tav-admin-um-account .um-button {
-    background: #0d9488 !important;
-    border-color: #0d9488 !important;
+    background: var(--tav-accent, #269EB2) !important;
+    border: none !important;
     border-radius: 8px !important;
     color: #fff !important;
     font-weight: 600 !important;
+    box-shadow: none !important;
+}
+
+.tav-native-account-form {
+    margin-top: 8px;
+}
+
+.tav-native-field {
+    margin-bottom: 18px;
+}
+
+.tav-native-field label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.tav-native-field input {
+    width: 100%;
+    max-width: 480px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+    background: #fff;
+    box-shadow: none;
+}
+
+.tav-native-field input:focus {
+    outline: none;
+    border-color: var(--tav-accent, #269EB2);
+    box-shadow: 0 0 0 3px rgba(38, 158, 178, 0.12);
+}
+
+.tav-native-form-actions {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.tav-admin-account-content .ccc-account-profile {
+    margin-bottom: 20px;
+}
+
+.tav-admin-account-content .ccc-profile-summary {
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #f1f5f9;
 }
 
 @media (max-width: 768px) {
@@ -5059,6 +5276,238 @@
     .tav-empty-state {
         padding: 24px 16px;
         font-size: 13px;
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STORYTELLER DATABASE PAGE STYLES
+   ══════════════════════════════════════════════════════════════ */
+
+.tav-storytellers-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.tav-storytellers-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tav-storytellers-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.tav-storytellers-search {
+    flex: 1;
+    min-width: 0;
+}
+
+.tav-storytellers-search .tav-search-input {
+    width: 100%;
+    padding: 12px 16px 12px 44px;
+    border: 1px solid var(--tav-border);
+    border-radius: 10px;
+    font-size: 14px;
+    background: var(--tav-card-bg);
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.tav-storytellers-search .tav-search-input:focus {
+    outline: none;
+    border-color: var(--tav-accent);
+    box-shadow: 0 0 0 3px rgba(38, 158, 178, .1);
+}
+
+.tav-storytellers-filters {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.tav-storytellers-select {
+    appearance: none;
+    min-width: 150px;
+    padding: 12px 36px 12px 14px;
+    border: 1px solid var(--tav-border);
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--tav-text-primary);
+    background: var(--tav-card-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 12px center;
+    cursor: pointer;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.tav-storytellers-select:focus {
+    outline: none;
+    border-color: var(--tav-accent);
+    box-shadow: 0 0 0 3px rgba(38, 158, 178, .1);
+}
+
+.tav-storytellers-clear {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--tav-accent);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.tav-storytellers-clear:hover {
+    text-decoration: underline;
+}
+
+.tav-storytellers-table-wrap {
+    margin-bottom: 0;
+}
+
+.tav-storytellers-table thead th {
+    padding: 14px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--tav-text-secondary);
+    text-transform: none;
+    letter-spacing: 0;
+    background: var(--tav-card-bg);
+}
+
+.tav-storytellers-table tbody td {
+    padding: 16px 20px;
+}
+
+.tav-storytellers-table .tav-boutique-avatar {
+    width: 44px;
+    height: 44px;
+    font-size: 13px;
+}
+
+.tav-name-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.tav-name-role {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--tav-text-muted);
+    line-height: 1.35;
+}
+
+.tav-cell-niche {
+    display: inline-block;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tav-cell-muted {
+    color: var(--tav-text-muted);
+}
+
+.tav-storytellers-table .tav-engagement-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    border: none;
+}
+
+.tav-storytellers-table .tav-engagement-badge.tav-eng-high {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.tav-storytellers-table .tav-engagement-badge.tav-eng-mid {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.tav-storytellers-table .tav-engagement-badge.tav-eng-low {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.tav-verified-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 78px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1.5px solid var(--tav-accent);
+    color: var(--tav-accent);
+    font-size: 13px;
+    font-weight: 500;
+    background: #fff;
+    white-space: nowrap;
+}
+
+.tav-verified-pill--pending {
+    border-color: #cbd5e1;
+    color: #64748b;
+}
+
+.tav-storytellers-table .tav-actions-wrap {
+    gap: 8px;
+}
+
+.tav-storytellers-table .tav-btn-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    color: #94a3b8;
+}
+
+.tav-storytellers-pagination {
+    margin-top: 8px;
+}
+
+@media (max-width: 960px) {
+    .tav-storytellers-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .tav-storytellers-filters {
+        flex-wrap: wrap;
+    }
+
+    .tav-storytellers-select {
+        flex: 1;
+        min-width: 140px;
+    }
+}
+
+@media (max-width: 768px) {
+    .tav-storytellers-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .tav-storytellers-header .tav-btn-primary {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .tav-storytellers-table .tav-cell-niche,
+    .tav-storytellers-table th:nth-child(3),
+    .tav-storytellers-table td:nth-child(3) {
+        display: none;
     }
 }
 

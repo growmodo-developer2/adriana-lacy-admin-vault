@@ -1,18 +1,32 @@
 console.log("TAV: JS Loaded");
 jQuery(document).ready(function ($) {
-    const $sidebar = $('.tav-sidebar');
+    const $sidebar = $('#tav-sidebar');
     const $collapseBtn = $('#tav-sidebar-collapse');
+    const $wrap = $('.tav-dashboard-wrap');
     const storageKey = 'tav_sidebar_collapsed';
 
-    // Sidebar collapse functionality
-    if ($collapseBtn.length) {
-        if (localStorage.getItem(storageKey) !== 'false') {
-            $sidebar.addClass('collapsed');
+    function tavApplySidebarState(collapsed) {
+        if (!$sidebar.length) {
+            return;
         }
 
-        $collapseBtn.on('click', function () {
-            $sidebar.toggleClass('collapsed');
-            localStorage.setItem(storageKey, $sidebar.hasClass('collapsed'));
+        $sidebar.toggleClass('collapsed', collapsed);
+        $wrap.toggleClass('is-sidebar-collapsed', collapsed);
+
+        if ($collapseBtn.length) {
+            $collapseBtn.attr('aria-expanded', collapsed ? 'false' : 'true');
+        }
+    }
+
+    if ($sidebar.length && $collapseBtn.length) {
+        const stored = localStorage.getItem(storageKey);
+        tavApplySidebarState(stored === 'true');
+
+        $collapseBtn.on('click', function (event) {
+            event.preventDefault();
+            const collapsed = !$sidebar.hasClass('collapsed');
+            tavApplySidebarState(collapsed);
+            localStorage.setItem(storageKey, collapsed ? 'true' : 'false');
         });
     }
     

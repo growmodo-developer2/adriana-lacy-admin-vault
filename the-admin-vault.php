@@ -1293,7 +1293,6 @@ function tav_handle_storyteller_form_submission(): void
     do_action('acf/save_post', $post_id);
 
     // Redirect back to storytellers list
-    $redirect_url = admin_url('admin.php?page=tav-dashboard&view=storytellers&saved=1');
-    wp_safe_redirect($redirect_url);
+    wp_safe_redirect(tav_get_dashboard_view_url('storytellers', ['saved' => '1']));
     exit;
 }

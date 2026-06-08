@@ -41,7 +41,6 @@ function tav_register_dashboard_page(): void
 
 function tav_dashboard_on_load(): void
 {
-    // Handle ACF form submission
     if (function_exists('acf_form_head')) {
         acf_form_head();
     }
@@ -54,143 +53,7 @@ function tav_dashboard_on_load(): void
         });
     }
 
-    // Handle Fulfillment Form Submission (Assign to Project)
-    if (isset($_GET['view']) && $_GET['view'] === 'fulfill' && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tav_fulfill_nonce']) && wp_verify_nonce($_POST['tav_fulfill_nonce'], 'tav_fulfill_action')) {
-        $debug_log = ABSPATH . 'tav_debug.log';
-        if ( defined('WP_DEBUG') && WP_DEBUG ) {
-            file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "Fulfillment POST reached for ID " . (isset($_GET['request_id']) ? $_GET['request_id'] : 'NONE') . "\n", FILE_APPEND);
-        }
-        
-        $req_id = isset($_GET['request_id']) ? (int)$_GET['request_id'] : 0;
-        
-        if ( defined('WP_DEBUG') && WP_DEBUG ) {
-            file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "Fulfillment POST processing started\n", FILE_APPEND);
-        }
-        
-        $selected_storytellers = isset($_POST['storytellers']) ? array_map('intval', (array) $_POST['storytellers']) : [];
-        $selected_storytellers = array_values(array_filter(array_unique($selected_storytellers)));
-        
-        if ($req_id > 0) {
-            // Guard: only fulfill requests that have been paid.
-            $current_status = get_post_meta($req_id, 'status', true);
-            $fulfillable_statuses = ['in_vetting', 'matching', 'paid', 'ready_review'];
-            if (!in_array($current_status, $fulfillable_statuses, true)) {
-                if ( defined('WP_DEBUG') && WP_DEBUG ) {
-                    file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "Blocked fulfillment — request #{$req_id} status is '{$current_status}' (not paid)\n", FILE_APPEND);
-                }
-                wp_safe_redirect(admin_url('admin.php?page=tav-dashboard&view=requests&error=not_paid'));
-                exit;
-            }
-
-            $limits = tav_get_fulfillment_selection_limits($req_id);
-            $selection_count = count($selected_storytellers);
-
-            if ($selection_count < $limits['min'] || $selection_count > $limits['max']) {
-                wp_safe_redirect(admin_url('admin.php?page=tav-dashboard&view=fulfill&request_id=' . $req_id . '&error=selection_count'));
-                exit;
-            }
-
-            // Single authoritative meta key — 'storytellers' is what the CCC reads.
-            update_post_meta($req_id, 'storytellers', $selected_storytellers);
-
-            if (!empty($selected_storytellers)) {
-                update_post_meta($req_id, 'status', 'ready_review');
-                if (function_exists('update_field')) {
-                    update_field('status', 'ready_review', $req_id);
-                }
-
-                // Ensure the post is published so CCC queries can find it.
-                wp_update_post([
-                    'ID'          => $req_id,
-                    'post_status' => 'publish',
-                ]);
-
-                // Email Notification Logic
-                $client_id = get_post_field('post_author', $req_id);
-                $client_user = get_userdata($client_id);
-                
-                if ($client_user) {
-                    $to = $client_user->user_email;
-                    $subject_tmpl = get_option('tav_email_fulfill_subject', 'Your storytellers are ready!');
-                    $body_tmpl = get_option('tav_email_fulfill_body', "Hi {{client_name}},\n\nWe have found some great storytellers for your project {{project_name}}.\n\nLog in to view them here: {{platform_url}}\n\nBest,\nThe Team");
-                    
-                    $st_list_text = "";
-                    foreach ($selected_storytellers as $st_id) {
-                        $st_post = get_post($st_id);
-                        if ($st_post) {
-                            $bio = get_field('bio', $st_id);
-                            $st_list_text .= "• " . $st_post->post_title . ($bio ? ": " . wp_trim_words($bio, 20) : "") . "\n";
-                        }
-                    }
-
-                    $review_page = get_page_by_path('review-storytellers');
-                    $review_url  = $review_page
-                        ? add_query_arg('request_id', $req_id, get_permalink($review_page))
-                        : add_query_arg('request_id', $req_id, site_url('/client-dashboard/'));
-
-                    $replacements = [
-                        '{{client_name}}'      => $client_user->display_name,
-                        '{{project_name}}'     => get_the_title($req_id),
-                        '{{request_id}}'       => (string) $req_id,
-                        '{{storyteller_list}}' => $st_list_text,
-                        '{{platform_url}}'     => $review_url,
-                    ];
-                    
-                    $subject = str_replace(array_keys($replacements), array_values($replacements), $subject_tmpl);
-                    $body = str_replace(array_keys($replacements), array_values($replacements), $body_tmpl);
-
-                    $mail_data = [
-                        'to' => $to,
-                        'subject' => $subject,
-                        'body' => $body,
-                        'replacements' => $replacements
-                    ];
-                    
-                    // Check if catch-all filter is actually hooked
-                    $filter_pri = has_filter('wp_mail', 'SISANU_Emails_Catch_All::wp_mail_catch_all');
-                    if (!$filter_pri) {
-                        // try different syntax
-                        $filter_pri = has_filter('wp_mail', ['SISANU_Emails_Catch_All', 'wp_mail_catch_all']);
-                    }
-                    
-                    if ( defined('WP_DEBUG') && WP_DEBUG ) {
-                        file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "Catch-all filter priority: " . ($filter_pri ?: "NOT FOUND") . "\n", FILE_APPEND);
-                        file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "Calling wp_mail with parameters: " . json_encode($mail_data) . "\n", FILE_APPEND);
-                    }
-                    
-                    $sent = wp_mail($to, $subject, $body);
-                    if ( defined('WP_DEBUG') && WP_DEBUG ) {
-                        file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "wp_mail result: " . ($sent ? "SUCCESS" : "FAILED") . "\n", FILE_APPEND);
-                    }
-                    
-                    // Log for debugging (simple error log)
-                    if (!$sent) {
-                        error_log("TAV Email Alert: Failed to send fulfillment email to {$to} for request #{$req_id}");
-                    }
-                } else {
-                    if ( defined('WP_DEBUG') && WP_DEBUG ) {
-                        file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "No client user found for request #$req_id\n", FILE_APPEND);
-                    }
-                }
-            } else {
-                if ( defined('WP_DEBUG') && WP_DEBUG ) {
-                    file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "No storytellers selected\n", FILE_APPEND);
-                }
-            }
-            
-            // Redirect back to requests list
-            $redirect_url = admin_url('admin.php?page=tav-dashboard&view=requests&notified=1&status=ready_review');
-            if ( defined('WP_DEBUG') && WP_DEBUG ) {
-                file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "Redirecting to $redirect_url\n", FILE_APPEND);
-            }
-            wp_redirect($redirect_url);
-            exit;
-        } else {
-            if ( defined('WP_DEBUG') && WP_DEBUG ) {
-                file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "Invalid Request ID: $req_id\n", FILE_APPEND);
-            }
-        }
-    }
+    tav_process_fulfillment_submission();
 
     // Enqueue dashboard CSS.
     add_action('admin_enqueue_scripts', function () {
@@ -242,7 +105,6 @@ function tav_dashboard_on_load(): void
             }
         }
 
-        // Enqueue WordPress media uploader for storyteller form
         wp_enqueue_media();
 
         wp_enqueue_script(
@@ -271,10 +133,138 @@ function tav_dashboard_on_load(): void
         ]);
     });
 
-    // Add body class for full-width.
     add_filter('admin_body_class', function (string $classes): string {
         return $classes . ' tav-page';
     });
+}
+
+/**
+ * Handle fulfillment form POST (Assign to Project). Works in wp-admin and front-end portal.
+ */
+function tav_process_fulfillment_submission(): void
+{
+    if (!isset($_GET['view']) || $_GET['view'] !== 'fulfill') {
+        return;
+    }
+
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+        return;
+    }
+
+    if (!isset($_POST['tav_fulfill_nonce']) || !wp_verify_nonce($_POST['tav_fulfill_nonce'], 'tav_fulfill_action')) {
+        return;
+    }
+
+    if (!current_user_can('edit_storytellers')) {
+        return;
+    }
+
+    $debug_log = ABSPATH . 'tav_debug.log';
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . 'Fulfillment POST reached for ID ' . (isset($_GET['request_id']) ? $_GET['request_id'] : 'NONE') . "\n", FILE_APPEND);
+    }
+
+    $req_id = isset($_GET['request_id']) ? (int) $_GET['request_id'] : 0;
+
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "Fulfillment POST processing started\n", FILE_APPEND);
+    }
+
+    $selected_storytellers = isset($_POST['storytellers']) ? array_map('intval', (array) $_POST['storytellers']) : [];
+    $selected_storytellers = array_values(array_filter(array_unique($selected_storytellers)));
+
+    if ($req_id <= 0) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "Invalid Request ID: $req_id\n", FILE_APPEND);
+        }
+        return;
+    }
+
+    $current_status = get_post_meta($req_id, 'status', true);
+    $fulfillable_statuses = ['in_vetting', 'matching', 'paid', 'ready_review'];
+    if (!in_array($current_status, $fulfillable_statuses, true)) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "Blocked fulfillment — request #{$req_id} status is '{$current_status}' (not paid)\n", FILE_APPEND);
+        }
+        wp_safe_redirect(tav_get_dashboard_view_url('requests', ['error' => 'not_paid']));
+        exit;
+    }
+
+    $limits = tav_get_fulfillment_selection_limits($req_id);
+    $selection_count = count($selected_storytellers);
+
+    if ($selection_count < $limits['min'] || $selection_count > $limits['max']) {
+        wp_safe_redirect(tav_get_dashboard_view_url('fulfill', ['request_id' => $req_id, 'error' => 'selection_count']));
+        exit;
+    }
+
+    update_post_meta($req_id, 'storytellers', $selected_storytellers);
+
+    if (!empty($selected_storytellers)) {
+        update_post_meta($req_id, 'status', 'ready_review');
+        if (function_exists('update_field')) {
+            update_field('status', 'ready_review', $req_id);
+        }
+
+        wp_update_post([
+            'ID'          => $req_id,
+            'post_status' => 'publish',
+        ]);
+
+        $client_id = get_post_field('post_author', $req_id);
+        $client_user = get_userdata($client_id);
+
+        if ($client_user) {
+            $to = $client_user->user_email;
+            $subject_tmpl = get_option('tav_email_fulfill_subject', 'Your storytellers are ready!');
+            $body_tmpl = get_option('tav_email_fulfill_body', "Hi {{client_name}},\n\nWe have found some great storytellers for your project {{project_name}}.\n\nLog in to view them here: {{platform_url}}\n\nBest,\nThe Team");
+
+            $st_list_text = '';
+            foreach ($selected_storytellers as $st_id) {
+                $st_post = get_post($st_id);
+                if ($st_post) {
+                    $bio = get_field('bio', $st_id);
+                    $st_list_text .= '• ' . $st_post->post_title . ($bio ? ': ' . wp_trim_words($bio, 20) : '') . "\n";
+                }
+            }
+
+            $review_page = get_page_by_path('review-storytellers');
+            $review_url  = $review_page
+                ? add_query_arg('request_id', $req_id, get_permalink($review_page))
+                : add_query_arg('request_id', $req_id, site_url('/client-dashboard/'));
+
+            $replacements = [
+                '{{client_name}}'      => $client_user->display_name,
+                '{{project_name}}'     => get_the_title($req_id),
+                '{{request_id}}'       => (string) $req_id,
+                '{{storyteller_list}}' => $st_list_text,
+                '{{platform_url}}'     => $review_url,
+            ];
+
+            $subject = str_replace(array_keys($replacements), array_values($replacements), $subject_tmpl);
+            $body = str_replace(array_keys($replacements), array_values($replacements), $body_tmpl);
+
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . 'Calling wp_mail for fulfillment notification' . "\n", FILE_APPEND);
+            }
+
+            $sent = wp_mail($to, $subject, $body);
+            if (!$sent) {
+                error_log("TAV Email Alert: Failed to send fulfillment email to {$to} for request #{$req_id}");
+            }
+        } elseif (defined('WP_DEBUG') && WP_DEBUG) {
+            file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "No client user found for request #$req_id\n", FILE_APPEND);
+        }
+    } elseif (defined('WP_DEBUG') && WP_DEBUG) {
+        file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "No storytellers selected\n", FILE_APPEND);
+    }
+
+    $redirect_url = tav_get_dashboard_view_url('requests', ['notified' => '1', 'status' => 'ready_review']);
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        file_put_contents($debug_log, date('[Y-m-d H:i:s] ') . "Redirecting to $redirect_url\n", FILE_APPEND);
+    }
+    wp_safe_redirect($redirect_url);
+    exit;
 }
 
 /*--------------------------------------------------------------
@@ -1396,16 +1386,33 @@ function tav_render_dashboard(): void
 
             <!-- ═══ SIDEBAR (Single with Collapsed/Expanded States) ═══ -->
             <aside class="tav-sidebar" id="tav-sidebar">
-                <div class="tav-sidebar-brand">
-                    <div class="tav-sidebar-logo" id="tav-sidebar-toggle" title="<?php esc_attr_e('Toggle Sidebar', 'the-admin-vault'); ?>">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                            <polyline points="20 6 9 17 4 12"></polyline>
+                <div class="tav-sidebar-header">
+                    <div class="tav-sidebar-brand">
+                        <div class="tav-sidebar-logo" aria-hidden="true">
+                            <span class="tav-sidebar-logo-mark">VS</span>
+                        </div>
+                        <div class="tav-sidebar-brand-text">
+                            <span class="tav-sidebar-brand-title"><?php esc_html_e('Verified', 'the-admin-vault'); ?></span>
+                            <span class="tav-sidebar-brand-sub"><?php esc_html_e('Storytellers', 'the-admin-vault'); ?></span>
+                        </div>
+                    </div>
+                    <button type="button"
+                            class="tav-sidebar-collapse-btn"
+                            id="tav-sidebar-collapse"
+                            aria-label="<?php esc_attr_e('Toggle sidebar', 'the-admin-vault'); ?>"
+                            aria-expanded="true"
+                            aria-controls="tav-sidebar">
+                        <svg class="tav-collapse-icon tav-collapse-icon--collapse" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                            <path d="M9 3v18"></path>
+                            <path d="M14 9l3 3-3 3"></path>
                         </svg>
-                    </div>
-                    <div class="tav-sidebar-brand-text">
-                        <span class="tav-sidebar-brand-title"><?php esc_html_e('Verified', 'the-admin-vault'); ?></span>
-                        <span class="tav-sidebar-brand-sub"><?php esc_html_e('Storytellers', 'the-admin-vault'); ?></span>
-                    </div>
+                        <svg class="tav-collapse-icon tav-collapse-icon--expand" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                            <path d="M9 3v18"></path>
+                            <path d="M16 9l-3 3 3 3"></path>
+                        </svg>
+                    </button>
                 </div>
 
                 <div class="tav-sidebar-section-label">
@@ -1442,7 +1449,10 @@ function tav_render_dashboard(): void
                         <a href="<?php echo esc_url(tav_get_dashboard_view_url('storytellers')); ?>"
                            class="<?php echo $is_storytellers || $is_add_teller || $is_edit_teller ? 'active' : ''; ?>" title="<?php esc_attr_e('Storytellers', 'the-admin-vault'); ?>">
                             <svg class="tav-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="20 6 9 17 4 12"></polyline>
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                             </svg>
                             <span class="tav-nav-text"><?php esc_html_e('Storytellers', 'the-admin-vault'); ?></span>
                         </a>
@@ -1486,28 +1496,17 @@ function tav_render_dashboard(): void
                             </a>
                         </li>
                     </ul>
-
-                    <ul class="tav-sidebar-nav tav-sidebar-nav-profile">
-                        <li>
-                            <a href="<?php echo esc_url(tav_get_dashboard_view_url('account-settings', ['tab' => 'profile'])); ?>"
-                               class="<?php echo $is_account_settings ? 'active' : ''; ?>"
-                               title="<?php esc_attr_e('My Profile', 'client-command-center'); ?>">
-                                <svg class="tav-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                    <circle cx="12" cy="7" r="4"></circle>
-                                </svg>
-                                <span class="tav-nav-text"><?php esc_html_e('My Profile', 'client-command-center'); ?></span>
-                            </a>
-                        </li>
-                    </ul>
                     
                     <!-- User Profile Card -->
-                    <?php 
+                    <?php
                     $current_user = wp_get_current_user();
-                    $user_name = $current_user->display_name;
-                    $user_email = $current_user->user_email;
+                    $user_name    = $current_user->display_name;
+                    $user_email   = $current_user->user_email;
+                    $profile_url  = tav_get_dashboard_view_url('account-settings', ['tab' => 'profile']);
                     ?>
-                    <div class="tav-sidebar-user-card">
+                    <a href="<?php echo esc_url($profile_url); ?>"
+                       class="tav-sidebar-user-card <?php echo $is_account_settings ? 'is-active' : ''; ?>"
+                       title="<?php esc_attr_e('My Profile', 'client-command-center'); ?>">
                         <div class="tav-user-avatar">
                             <?php echo get_avatar(get_current_user_id(), 40); ?>
                         </div>
@@ -1515,20 +1514,7 @@ function tav_render_dashboard(): void
                             <span class="tav-user-name"><?php echo esc_html($user_name); ?></span>
                             <span class="tav-user-email"><?php echo esc_html($user_email); ?></span>
                         </div>
-                        <button class="tav-user-dropdown-toggle" type="button" aria-expanded="false" aria-controls="tav-user-account-menu">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="6 9 12 15 18 9"></polyline>
-                            </svg>
-                        </button>
-                        <div class="tav-user-account-menu" id="tav-user-account-menu" hidden>
-                            <a href="<?php echo esc_url(tav_get_dashboard_view_url('account-settings', ['tab' => 'profile'])); ?>">
-                                <?php esc_html_e('My Profile', 'client-command-center'); ?>
-                            </a>
-                            <a href="<?php echo esc_url(tav_get_dashboard_view_url('account-settings', ['tab' => 'password'])); ?>">
-                                <?php esc_html_e('Password', 'client-command-center'); ?>
-                            </a>
-                        </div>
-                    </div>
+                    </a>
                 </div>
             </aside>
 
@@ -1564,34 +1550,5 @@ function tav_render_dashboard(): void
             </div><!-- .tav-content -->
         </main>
     </div>
-    
-    <script>
-    (function() {
-        var toggleBtn = document.getElementById('tav-sidebar-toggle');
-        var sidebar = document.getElementById('tav-sidebar');
-
-        if (toggleBtn && sidebar) {
-            var isCollapsed = localStorage.getItem('tav_sidebar_collapsed') === 'true';
-            if (isCollapsed) {
-                sidebar.classList.add('collapsed');
-            }
-
-            toggleBtn.addEventListener('click', function() {
-                sidebar.classList.toggle('collapsed');
-                localStorage.setItem('tav_sidebar_collapsed', sidebar.classList.contains('collapsed'));
-            });
-        }
-
-        var userToggle = document.querySelector('.tav-user-dropdown-toggle');
-        var userMenu = document.getElementById('tav-user-account-menu');
-        if (userToggle && userMenu) {
-            userToggle.addEventListener('click', function() {
-                var open = !userMenu.hidden;
-                userMenu.hidden = open;
-                userToggle.setAttribute('aria-expanded', open ? 'false' : 'true');
-            });
-        }
-    })();
-    </script>
     <?php
 }

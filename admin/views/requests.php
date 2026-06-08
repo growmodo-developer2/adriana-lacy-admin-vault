@@ -179,7 +179,7 @@ $filter_statuses = [
         <div class="tav-filter-actions">
             <button type="submit" class="tav-btn-filter"><?php esc_html_e('Apply Filters', 'the-admin-vault'); ?></button>
             <?php if ($status_filter || $selected_client || $selected_niche || $date_from || $date_to): ?>
-                <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=requests' . ($search_query ? '&req_search=' . urlencode($search_query) : ''))); ?>" class="tav-btn-clear"><?php esc_html_e('Clear', 'the-admin-vault'); ?></a>
+                <a href="<?php echo esc_url(tav_get_dashboard_view_url('requests', $search_query ? ['req_search' => $search_query] : [])); ?>" class="tav-btn-clear"><?php esc_html_e('Clear', 'the-admin-vault'); ?></a>
             <?php endif; ?>
         </div>
     </form>
@@ -388,21 +388,21 @@ $filter_statuses = [
                                     <?php break;
                                     
                                     case 'paid': ?>
-                                        <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=fulfill&request_id=' . $req_id)); ?>" 
+                                        <a href="<?php echo esc_url(tav_get_dashboard_view_url('fulfill', ['request_id' => $req_id])); ?>" 
                                            class="tav-action-btn tav-action-start-matching">
                                             <?php esc_html_e('Start Matching', 'the-admin-vault'); ?>
                                         </a>
                                     <?php break;
                                     
                                     case 'in_vetting': ?>
-                                        <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=fulfill&request_id=' . $req_id)); ?>" 
+                                        <a href="<?php echo esc_url(tav_get_dashboard_view_url('fulfill', ['request_id' => $req_id])); ?>" 
                                            class="tav-action-btn tav-action-continue-vetting">
                                             <?php esc_html_e('Continue Vetting', 'the-admin-vault'); ?>
                                         </a>
                                     <?php break;
                                     
                                     case 'matching': ?>
-                                        <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=fulfill&request_id=' . $req_id)); ?>" 
+                                        <a href="<?php echo esc_url(tav_get_dashboard_view_url('fulfill', ['request_id' => $req_id])); ?>" 
                                            class="tav-action-btn tav-action-assign">
                                             <?php esc_html_e('Assign Storytellers', 'the-admin-vault'); ?>
                                         </a>
@@ -422,7 +422,7 @@ $filter_statuses = [
                                                 data-modal="tav-req-modal-<?php echo esc_attr($req_id); ?>">
                                             <?php esc_html_e('View Selection', 'the-admin-vault'); ?>
                                         </button>
-                                        <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?page=' . $current_page_slug . '&view=requests&tav_set_complete=' . $req_id), 'tav_complete_' . $req_id)); ?>" 
+                                        <a href="<?php echo esc_url(wp_nonce_url(tav_get_dashboard_view_url('requests', ['tav_set_complete' => $req_id]), 'tav_complete_' . $req_id)); ?>" 
                                            class="tav-action-btn tav-action-complete"
                                            onclick="return confirm('<?php esc_attr_e('Mark this request as completed?', 'the-admin-vault'); ?>');">
                                             <?php esc_html_e('Mark Complete', 'the-admin-vault'); ?>
@@ -1133,7 +1133,7 @@ if ($req_query->have_posts()) :
                                style="background:#0369a1;text-decoration:none;">
                                 Edit Post in WP Admin
                             </a>
-                            <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=fulfill&request_id=' . $debug_req_id)); ?>" 
+                            <a href="<?php echo esc_url(tav_get_dashboard_view_url('fulfill', ['request_id' => $debug_req_id])); ?>" 
                                class="tav-action-btn tav-action-fulfill"
                                style="text-decoration:none;">
                                 Fulfill Request

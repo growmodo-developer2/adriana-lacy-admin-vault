@@ -30,7 +30,7 @@ $pending_requests_count = tav_get_active_requests_count();
             <span class="tav-notif-stat-label"><?php esc_html_e('Pending Requests', 'the-admin-vault'); ?></span>
         </div>
         <?php if ($pending_requests_count > 0): ?>
-            <a href="<?php echo esc_url(admin_url('admin.php?page=tav-dashboard&view=requests')); ?>" class="tav-notif-stat-action">
+            <a href="<?php echo esc_url(tav_get_dashboard_view_url('requests')); ?>" class="tav-notif-stat-action">
                 <?php esc_html_e('View All', 'the-admin-vault'); ?> →
             </a>
         <?php endif; ?>
@@ -68,13 +68,13 @@ $pending_requests_count = tav_get_active_requests_count();
                         case 'payment':
                         case 'fulfilled':
                         case 'selections':
-                            $action_url = admin_url('admin.php?page=tav-dashboard&view=requests');
+                            $action_url = tav_get_dashboard_view_url('requests');
                             break;
                         case 'new_storyteller':
-                            $action_url = admin_url('admin.php?page=tav-dashboard&view=storytellers');
+                            $action_url = tav_get_dashboard_view_url('storytellers');
                             break;
                         case 'new_client':
-                            $action_url = admin_url('admin.php?page=tav-dashboard&view=clients');
+                            $action_url = tav_get_dashboard_view_url('clients');
                             break;
                     }
                     if ($action_url):

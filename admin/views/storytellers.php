@@ -11,63 +11,90 @@ if (!function_exists('tav_render_status_pill_view')) {
 }
 
 if ($is_storytellers):
+    $search_query = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
+    $loc_query = isset($_GET['loc']) ? sanitize_text_field($_GET['loc']) : '';
+    $niche_query = isset($_GET['niche']) ? sanitize_text_field($_GET['niche']) : '';
+    $niches = tav_get_niches();
+
+    global $wpdb;
+    $location_options = $wpdb->get_col(
+        "SELECT DISTINCT pm.meta_value
+         FROM {$wpdb->postmeta} pm
+         INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+         WHERE p.post_type = 'storyteller'
+           AND p.post_status = 'publish'
+           AND pm.meta_key = 'location'
+           AND pm.meta_value != ''
+         ORDER BY pm.meta_value ASC"
+    );
 ?>
-    <!-- ── Storytellers Boutique Table View ────────── -->
-    <div class="tav-page-header">
-        <h1 class="tav-page-title"><?php esc_html_e('Verified Storytellers', 'the-admin-vault'); ?></h1>
-        <div class="tav-header-actions">
+    <!-- ── Storytellers Database View ────────── -->
+    <div class="tav-page-header tav-storytellers-header">
+        <div class="tav-storytellers-header-left">
+            <h1 class="tav-page-title"><?php esc_html_e('Storyteller Database', 'the-admin-vault'); ?></h1>
             <p class="tav-page-subtitle"><?php esc_html_e('Manage your exclusive talent list', 'the-admin-vault'); ?></p>
-            <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=add-teller')); ?>" class="tav-btn-primary">
-                <span class="dashicons dashicons-plus"></span>
-                <?php esc_html_e('Add Storyteller', 'the-admin-vault'); ?>
-            </a>
         </div>
+        <a href="<?php echo esc_url(tav_get_dashboard_view_url('add-teller')); ?>" class="tav-btn tav-btn-primary">
+            <span class="dashicons dashicons-plus"></span>
+            <?php esc_html_e('Add Storyteller', 'the-admin-vault'); ?>
+        </a>
     </div>
 
-    <!-- Filter Bar -->
-    <form method="GET" class="tav-filter-bar">
+    <form method="GET" class="tav-storytellers-toolbar">
         <input type="hidden" name="page" value="<?php echo esc_attr($current_page_slug); ?>">
         <input type="hidden" name="view" value="storytellers">
-        
-        <?php
-        $search_query = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
-        $loc_query = isset($_GET['loc']) ? sanitize_text_field($_GET['loc']) : '';
-        ?>
-        
-        <input type="text" name="s" value="<?php echo esc_attr($search_query); ?>" placeholder="<?php esc_attr_e('Search by name...', 'the-admin-vault'); ?>" class="tav-search-input">
-        
-        <input type="text" name="loc" value="<?php echo esc_attr($loc_query); ?>" placeholder="<?php esc_attr_e('Filter by location...', 'the-admin-vault'); ?>">
 
-        <?php
-        $niches = tav_get_niches();
-        $niche_query = isset($_GET['niche']) ? sanitize_text_field($_GET['niche']) : '';
-        ?>
-        <select name="niche">
-            <option value=""><?php esc_html_e('All Niches', 'the-admin-vault'); ?></option>
-            <?php foreach ($niches as $slug => $label): ?>
-                <option value="<?php echo esc_attr($slug); ?>" <?php selected($niche_query, $slug); ?>><?php echo esc_html($label); ?></option>
-            <?php endforeach; ?>
-        </select>
+        <div class="tav-search-input-wrap tav-storytellers-search">
+            <svg class="tav-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            <input
+                type="text"
+                name="s"
+                value="<?php echo esc_attr($search_query); ?>"
+                placeholder="<?php esc_attr_e('Search by Name, Location or Niche...', 'the-admin-vault'); ?>"
+                class="tav-search-input"
+            >
+        </div>
 
-        <button type="submit" class="button button-secondary"><?php esc_html_e('Filter', 'the-admin-vault'); ?></button>
-        
-        <?php if ($search_query || $loc_query || $niche_query): ?>
-            <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=storytellers')); ?>" class="button"><?php esc_html_e('Clear', 'the-admin-vault'); ?></a>
-        <?php endif; ?>
+        <div class="tav-storytellers-filters">
+            <select name="loc" class="tav-storytellers-select" onchange="this.form.submit()">
+                <option value=""><?php esc_html_e('All Locations', 'the-admin-vault'); ?></option>
+                <?php foreach ($location_options as $location_option): ?>
+                    <option value="<?php echo esc_attr($location_option); ?>" <?php selected($loc_query, $location_option); ?>>
+                        <?php echo esc_html($location_option); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+
+            <select name="niche" class="tav-storytellers-select" onchange="this.form.submit()">
+                <option value=""><?php esc_html_e('All Niches', 'the-admin-vault'); ?></option>
+                <?php foreach ($niches as $slug => $label): ?>
+                    <option value="<?php echo esc_attr($slug); ?>" <?php selected($niche_query, $slug); ?>><?php echo esc_html($label); ?></option>
+                <?php endforeach; ?>
+            </select>
+
+            <?php if ($search_query || $loc_query || $niche_query): ?>
+                <a href="<?php echo esc_url(tav_get_dashboard_view_url('storytellers')); ?>" class="tav-storytellers-clear">
+                    <?php esc_html_e('Clear', 'the-admin-vault'); ?>
+                </a>
+            <?php endif; ?>
+        </div>
     </form>
 
-    <div class="tav-boutique-table-wrap">
-        <table class="tav-boutique-table">
+    <div class="tav-boutique-table-wrap tav-storytellers-table-wrap">
+        <table class="tav-boutique-table tav-storytellers-table">
             <thead>
                 <tr>
-                    <th><?php esc_html_e('NAME', 'the-admin-vault'); ?></th>
-                    <th><?php esc_html_e('LOCATION', 'the-admin-vault'); ?></th>
-                    <th><?php esc_html_e('NICHE', 'the-admin-vault'); ?></th>
-                    <th><?php esc_html_e('PLATFORMS', 'the-admin-vault'); ?></th>
-                    <th><?php esc_html_e('FOLLOWERS', 'the-admin-vault'); ?></th>
-                    <th><?php esc_html_e('ENGAGEMENT', 'the-admin-vault'); ?></th>
-                    <th><?php esc_html_e('STATUS', 'the-admin-vault'); ?></th>
-                    <th class="actions"><?php esc_html_e('ACTIONS', 'the-admin-vault'); ?></th>
+                    <th class="tav-col-sortable"><?php esc_html_e('Name', 'the-admin-vault'); ?> <span class="tav-sort-icon">↕</span></th>
+                    <th class="tav-col-sortable"><?php esc_html_e('Region', 'the-admin-vault'); ?> <span class="tav-sort-icon">↕</span></th>
+                    <th class="tav-col-sortable"><?php esc_html_e('Niche', 'the-admin-vault'); ?> <span class="tav-sort-icon">↕</span></th>
+                    <th class="tav-col-sortable"><?php esc_html_e('Platform', 'the-admin-vault'); ?> <span class="tav-sort-icon">↕</span></th>
+                    <th class="tav-col-sortable"><?php esc_html_e('Followers', 'the-admin-vault'); ?> <span class="tav-sort-icon">↕</span></th>
+                    <th class="tav-col-sortable"><?php esc_html_e('Engagement', 'the-admin-vault'); ?> <span class="tav-sort-icon">↕</span></th>
+                    <th class="tav-col-sortable"><?php esc_html_e('Status', 'the-admin-vault'); ?> <span class="tav-sort-icon">↕</span></th>
+                    <th class="tav-col-actions"><?php esc_html_e('Actions', 'the-admin-vault'); ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -142,9 +169,15 @@ if ($is_storytellers):
                         // Read the pre-calculated average written by tav_persist_avg_engagement_rate.
                         $engagement  = (float) get_post_meta($post->ID, 'tav_avg_engagement_rate', true);
 
-                        $status = get_field('campaign_status', $post->ID) ?: 'prospect';
+                        $is_verified = (bool) get_field('is_verified', $post->ID);
+                        $bio = get_field('bio', $post->ID) ?: '';
+                        $bio_excerpt = $bio ? wp_trim_words(wp_strip_all_tags($bio), 8, '…') : '';
                         $initials = tav_get_initials($post->post_title);
                         $thumb_id = get_post_thumbnail_id($post->ID);
+                        $profile_image_id = get_field('profile_image', $post->ID);
+                        if (!$thumb_id && $profile_image_id) {
+                            $thumb_id = (int) $profile_image_id;
+                        }
 
                         ?>
                         <tr>
@@ -157,18 +190,39 @@ if ($is_storytellers):
                                             echo esc_html($initials);
                                         endif; ?>
                                     </div>
-                                    <span class="tav-name-text"><?php echo esc_html($post->post_title); ?></span>
+                                    <div class="tav-name-stack">
+                                        <span class="tav-name-text"><?php echo esc_html($post->post_title); ?></span>
+                                        <?php if ($bio_excerpt): ?>
+                                            <span class="tav-name-role"><?php echo esc_html($bio_excerpt); ?></span>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
                             </td>
                             <td><span class="tav-cell-secondary"><?php echo esc_html($loc); ?></span></td>
-                            <td><span class="tav-cell-secondary"><?php echo esc_html($niche); ?></span></td>
+                            <td><span class="tav-cell-secondary tav-cell-niche"><?php echo esc_html($niche); ?></span></td>
                             <td><span class="tav-cell-secondary"><?php echo esc_html($plat_str); ?></span></td>
                             <td><span class="tav-cell-primary"><?php echo esc_html(tav_format_metric((int)$followers)); ?></span></td>
-                            <td><span class="tav-cell-secondary"><?php echo esc_html($engagement ? $engagement . '%' : '—'); ?></span></td>
-                            <td><?php echo tav_render_status_pill($status); ?></td>
-                            <td class="actions">
+                            <td>
+                                <?php if ($engagement > 0):
+                                    $eng_class = $engagement >= 6 ? 'tav-eng-high' : ($engagement >= 3 ? 'tav-eng-mid' : 'tav-eng-low');
+                                ?>
+                                    <span class="tav-engagement-badge <?php echo esc_attr($eng_class); ?>">
+                                        <?php echo esc_html(rtrim(rtrim(number_format($engagement, 1), '0'), '.') . '%'); ?>
+                                    </span>
+                                <?php else: ?>
+                                    <span class="tav-cell-muted">—</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if ($is_verified): ?>
+                                    <span class="tav-verified-pill"><?php esc_html_e('Verified', 'the-admin-vault'); ?></span>
+                                <?php else: ?>
+                                    <span class="tav-verified-pill tav-verified-pill--pending"><?php esc_html_e('Pending', 'the-admin-vault'); ?></span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="actions tav-col-actions">
                                 <div class="tav-actions-wrap">
-                                    <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=edit-teller&post_id=' . $post->ID)); ?>" class="tav-btn-icon" title="Edit">
+                                    <a href="<?php echo esc_url(tav_get_dashboard_view_url('edit-teller', ['post_id' => $post->ID])); ?>" class="tav-btn-icon" title="Edit">
                                         <span class="dashicons dashicons-edit"></span>
                                     </a>
                                     <a href="<?php echo esc_url(get_delete_post_link($post->ID)); ?>" class="tav-btn-icon delete" title="Delete">
@@ -189,20 +243,32 @@ if ($is_storytellers):
         </table>
     </div>
 
-    <?php if ($total_pages > 1): ?>
-        <div class="tav-pagination">
-            <?php
-            echo paginate_links([
-                'base' => add_query_arg('paged', '%#%'),
-                'format' => '',
-                'prev_text' => __('&laquo; Prev', 'the-admin-vault'),
-                'next_text' => __('Next &raquo;', 'the-admin-vault'),
-                'total' => $total_pages,
-                'current' => $paged,
-            ]);
-            ?>
+    <div class="tav-pagination-wrap tav-storytellers-pagination">
+        <span class="tav-pagination-info">
+            <?php printf(esc_html__('Page %1$d of %2$d', 'the-admin-vault'), $paged, max(1, (int) $total_pages)); ?>
+        </span>
+        <div class="tav-pagination-buttons">
+            <?php if ($paged > 1): ?>
+                <a href="<?php echo esc_url(add_query_arg('paged', $paged - 1)); ?>" class="tav-btn tav-btn-outline">
+                    <?php esc_html_e('Previous', 'the-admin-vault'); ?>
+                </a>
+            <?php else: ?>
+                <button type="button" class="tav-btn tav-btn-outline" disabled>
+                    <?php esc_html_e('Previous', 'the-admin-vault'); ?>
+                </button>
+            <?php endif; ?>
+
+            <?php if ($paged < $total_pages): ?>
+                <a href="<?php echo esc_url(add_query_arg('paged', $paged + 1)); ?>" class="tav-btn tav-btn-primary">
+                    <?php esc_html_e('Next', 'the-admin-vault'); ?>
+                </a>
+            <?php else: ?>
+                <button type="button" class="tav-btn tav-btn-primary" disabled>
+                    <?php esc_html_e('Next', 'the-admin-vault'); ?>
+                </button>
+            <?php endif; ?>
         </div>
-    <?php endif; ?>
+    </div>
 
 <?php elseif ($is_add_teller || $is_edit_teller):
     $post_id = $is_edit_teller ? (int)$_GET['post_id'] : 'new_post';
@@ -281,7 +347,7 @@ if ($is_storytellers):
     ?>
     
     <!-- Back Link -->
-    <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=storytellers')); ?>" class="tav-back-link">
+    <a href="<?php echo esc_url(tav_get_dashboard_view_url('storytellers')); ?>" class="tav-back-link">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
@@ -491,7 +557,7 @@ if ($is_storytellers):
             
             <!-- Form Actions -->
             <div class="tav-form-actions">
-                <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=storytellers')); ?>" class="tav-btn-cancel">
+                <a href="<?php echo esc_url(tav_get_dashboard_view_url('storytellers')); ?>" class="tav-btn-cancel">
                     <?php esc_html_e('Cancel', 'the-admin-vault'); ?>
                 </a>
                 <button type="submit" class="tav-btn-submit">

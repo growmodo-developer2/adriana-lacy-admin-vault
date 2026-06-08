@@ -97,7 +97,7 @@ $engagement_filter = isset($_GET['s_engagement']) ? sanitize_text_field($_GET['s
 
 <div class="tav-page-header">
     <h1 class="tav-page-title"><?php esc_html_e('Fulfill Request', 'the-admin-vault'); ?>: <?php echo esc_html($project_name); ?></h1>
-    <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=requests')); ?>" class="tav-btn-secondary">
+    <a href="<?php echo esc_url(tav_get_dashboard_view_url('requests')); ?>" class="tav-btn-secondary">
         <span class="dashicons dashicons-arrow-left-alt"></span>
         <?php esc_html_e('Back to Requests', 'the-admin-vault'); ?>
     </a>
@@ -225,7 +225,7 @@ $engagement_filter = isset($_GET['s_engagement']) ? sanitize_text_field($_GET['s
             <div class="tav-fulfillment-search-row">
                 <button type="submit" class="button button-primary"><?php esc_html_e('Search', 'the-admin-vault'); ?></button>
                 <?php if ($search_term || $niche_filter || $location_filter || $platform_filter || $followers_filter || $engagement_filter): ?>
-                    <a href="<?php echo esc_url(admin_url('admin.php?page=' . $current_page_slug . '&view=fulfill&request_id=' . $req_id)); ?>" class="button"><?php esc_html_e('Clear Filters', 'the-admin-vault'); ?></a>
+                    <a href="<?php echo esc_url(tav_get_dashboard_view_url('fulfill', ['request_id' => $req_id])); ?>" class="button"><?php esc_html_e('Clear Filters', 'the-admin-vault'); ?></a>
                 <?php endif; ?>
             </div>
         </form>
