@@ -1518,7 +1518,31 @@ function tav_render_dashboard(): void
                 </div>
             </aside>
 
+            <div class="tav-sidebar-overlay"
+                 id="tav-sidebar-overlay"
+                 role="button"
+                 aria-label="<?php esc_attr_e('Close menu', 'the-admin-vault'); ?>"
+                 aria-hidden="true"
+                 tabindex="-1"></div>
+
             <!-- ═══ CONTENT ═══════════════════════════════════ -->
+            <div class="tav-content-column">
+            <div class="tav-mobile-header">
+                <button type="button"
+                        class="tav-mobile-menu-btn"
+                        id="tav-mobile-menu-btn"
+                        aria-label="<?php esc_attr_e('Open menu', 'the-admin-vault'); ?>"
+                        aria-expanded="false"
+                        aria-controls="tav-sidebar">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+                <span class="tav-mobile-header-title"><?php esc_html_e('Verified Storytellers', 'the-admin-vault'); ?></span>
+            </div>
+
             <div class="tav-content">
 
                 <?php
@@ -1548,6 +1572,7 @@ function tav_render_dashboard(): void
                 ?>
 
             </div><!-- .tav-content -->
+            </div><!-- .tav-content-column -->
         </main>
     </div>
     <?php

@@ -23,6 +23,14 @@
     --tav-text-muted: #94a3b8;
     --tav-border: #e2e8f0;
     --tav-font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --tav-table-min-width: 900px;
+    --tav-col-date-min: 110px;
+    --tav-col-status-min: 130px;
+    --tav-col-actions-min: 140px;
+    --tav-col-amount-min: 90px;
+    --tav-col-count-min: 72px;
+    --tav-sidebar-top: 0px;
+    --tav-sidebar-left: 0px;
 }
 
 /* ── Full-page wrap — bleeds into WP admin chrome ──────────── */
@@ -62,6 +70,26 @@ body.tav-admin-portal-page .tav-dashboard-wrap {
 }
 
 /* ── Sidebar ───────────────────────────────────────────────── */
+body.admin-bar.tav-page {
+    --tav-sidebar-top: 32px;
+}
+
+@media screen and (max-width: 782px) {
+    body.admin-bar.tav-page {
+        --tav-sidebar-top: 46px;
+    }
+}
+
+/* WP admin menu width when embedded in wp-admin (used for portal fallback only) */
+body.tav-page:not(.tav-admin-portal-page) {
+    --tav-sidebar-left: 160px;
+}
+
+body.tav-page.folded:not(.tav-admin-portal-page),
+body.tav-page.auto-fold:not(.tav-admin-portal-page) {
+    --tav-sidebar-left: 36px;
+}
+
 .tav-sidebar {
     width: var(--tav-sidebar-w);
     background: var(--tav-sidebar-bg);
@@ -69,18 +97,19 @@ body.tav-admin-portal-page .tav-dashboard-wrap {
     flex-direction: column;
     flex-shrink: 0;
     transition: width .25s cubic-bezier(0.4, 0, 0.2, 1);
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    max-height: 100vh;
-    overflow-y: auto;
-    overflow-x: hidden;
+    position: fixed;
+    left: var(--tav-sidebar-left);
+    top: var(--tav-sidebar-top);
+    bottom: 0;
+    height: auto;
+    max-height: none;
+    overflow: hidden;
     z-index: 100;
 }
 
+/* Front-end portal: flush to viewport edge */
 .tav-front-portal .tav-sidebar,
 body.tav-admin-portal-page .tav-sidebar {
-    position: fixed;
     left: 0;
     top: 0;
     z-index: 200;
@@ -90,21 +119,26 @@ body.tav-admin-portal-page .tav-sidebar {
     width: var(--tav-sidebar-collapsed-w);
 }
 
-/* Sidebar scrollbar styling */
-.tav-sidebar::-webkit-scrollbar {
+/* Sidebar scrollbar styling (nav region only) */
+.tav-sidebar-nav {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, .25) transparent;
+}
+
+.tav-sidebar-nav::-webkit-scrollbar {
     width: 6px;
 }
 
-.tav-sidebar::-webkit-scrollbar-track {
+.tav-sidebar-nav::-webkit-scrollbar-track {
     background: transparent;
 }
 
-.tav-sidebar::-webkit-scrollbar-thumb {
+.tav-sidebar-nav::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, .2);
     border-radius: 3px;
 }
 
-.tav-sidebar::-webkit-scrollbar-thumb:hover {
+.tav-sidebar-nav::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, .3);
 }
 
@@ -190,12 +224,17 @@ body.tav-admin-portal-page .tav-sidebar {
 
 .tav-sidebar.collapsed .tav-sidebar-header {
     min-height: 56px;
+    padding: 10px 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .tav-sidebar.collapsed .tav-sidebar-collapse-btn {
-    top: 12px;
-    right: 8px;
-    transform: none;
+    position: static;
+    top: auto;
+    right: auto;
+    margin: 0 auto;
 }
 
 .tav-sidebar.collapsed .tav-collapse-icon--collapse {
@@ -290,6 +329,10 @@ body.tav-admin-portal-page .tav-sidebar {
     margin: 0;
     padding: 0 12px;
     flex: 1;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
 .tav-sidebar-nav li {
@@ -358,7 +401,16 @@ body.tav-admin-portal-page .tav-sidebar {
 
 .tav-sidebar.collapsed .tav-sidebar-nav a {
     justify-content: center;
-    padding: 12px 0;
+    align-items: center;
+    gap: 0;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    padding: 0;
+    margin: 0 auto;
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 .tav-sidebar.collapsed .tav-sidebar-nav a span:not(.tav-nav-icon):not(.tav-nav-badge) {
@@ -366,6 +418,21 @@ body.tav-admin-portal-page .tav-sidebar {
     opacity: 0;
     width: 0;
     overflow: hidden;
+}
+
+.tav-sidebar.collapsed .tav-sidebar-nav {
+    padding: 8px 6px;
+}
+
+.tav-sidebar.collapsed .tav-sidebar-nav li {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 6px;
+}
+
+.tav-sidebar.collapsed .tav-sidebar-nav-bottom li {
+    display: flex;
+    justify-content: center;
 }
 
 .tav-sidebar.collapsed .tav-nav-badge {
@@ -536,12 +603,28 @@ body.tav-admin-portal-page .tav-sidebar {
 
 /* Collapsed state for bottom section */
 .tav-sidebar.collapsed .tav-sidebar-bottom-section {
-    padding: 16px 4px;
+    padding: 12px 6px 16px;
 }
 
 .tav-sidebar.collapsed .tav-sidebar-user-card {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    padding: 0;
+    margin: 0 auto;
     justify-content: center;
-    padding: 8px;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.tav-sidebar.collapsed .tav-sidebar-nav-bottom .tav-sidebar-nav a,
+.tav-sidebar.collapsed .tav-sidebar-nav-bottom a {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    padding: 0;
+    margin: 0 auto;
 }
 
 .tav-sidebar.collapsed .tav-user-info {
@@ -563,8 +646,22 @@ body.tav-admin-portal-page .tav-sidebar {
 
 .tav-front-portal .tav-main,
 body.tav-admin-portal-page .tav-main {
-    margin-left: var(--tav-current-sidebar-w, var(--tav-sidebar-w));
-    transition: margin-left .25s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-left: 0;
+}
+
+@media (min-width: 961px) {
+    .tav-content-column {
+        margin-left: var(--tav-current-sidebar-w, var(--tav-sidebar-w));
+        transition: margin-left .25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+}
+
+.tav-content-column {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
 }
 
 .tav-content {
@@ -572,7 +669,10 @@ body.tav-admin-portal-page .tav-main {
     padding: 32px 40px 60px;
     min-width: 0;
     width: 100%;
+    max-width: 100%;
     box-sizing: border-box;
+    container-type: inline-size;
+    container-name: tav-page;
 }
 
 .tav-page-header {
@@ -736,6 +836,7 @@ body.tav-admin-portal-page .tav-main {
     gap: 12px;
     transition: box-shadow .2s ease, transform .2s ease;
     border: 1px solid var(--tav-border);
+    min-width: 0;
 }
 
 .tav-stat-card:hover {
@@ -1090,11 +1191,12 @@ body.tav-admin-portal-page .tav-main {
     border: 1px solid var(--tav-border);
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    max-width: 100%;
 }
 
 .tav-boutique-table {
     width: 100%;
-    min-width: 800px;
+    min-width: var(--tav-table-min-width);
     border-collapse: collapse;
     text-align: left;
 }
@@ -1108,6 +1210,7 @@ body.tav-admin-portal-page .tav-main {
     letter-spacing: 1px;
     background: #fcfcfc;
     border-bottom: 1px solid var(--tav-border);
+    white-space: nowrap;
 }
 
 .tav-boutique-table thead th.actions {
@@ -1233,6 +1336,43 @@ body.tav-admin-portal-page .tav-main {
     font-size: 13px;
 }
 
+/* ── Mobile nav (hidden on desktop) ─────────────────────────── */
+.tav-mobile-header {
+    display: none;
+}
+
+.tav-sidebar-overlay {
+    display: none;
+    appearance: none;
+    -webkit-appearance: none;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    outline: none;
+    background: rgba(15, 23, 42, 0.45) !important;
+    color: transparent;
+    font-size: 0;
+    line-height: 0;
+    min-width: 0;
+    min-height: 0;
+    width: auto;
+    height: auto;
+    text-transform: none;
+    cursor: pointer;
+}
+
+.tav-sidebar-overlay:hover,
+.tav-sidebar-overlay:focus,
+.tav-sidebar-overlay:active {
+    background: rgba(15, 23, 42, 0.45) !important;
+    color: transparent;
+    border: none;
+    box-shadow: none;
+    outline: none;
+}
+
 /* ── Responsive ────────────────────────────────────────────── */
 @media (max-width: 1200px) {
     .tav-stats-grid {
@@ -1241,8 +1381,212 @@ body.tav-admin-portal-page .tav-main {
 }
 
 @media (max-width: 960px) {
-    .tav-dashboard-wrap:not(.tav-front-portal) .tav-sidebar {
+    .tav-dashboard-wrap {
+        margin: 0;
+    }
+
+    .tav-page #wpbody-content {
+        padding-bottom: 0;
+    }
+
+    .tav-mobile-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        position: sticky;
+        top: 0;
+        z-index: 350;
+        margin: 0;
+        padding: 12px 16px;
+        background: var(--tav-card-bg);
+        border-bottom: 1px solid var(--tav-border);
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+        flex-shrink: 0;
+    }
+
+    .tav-content-column {
+        width: 100%;
+    }
+
+    .tav-content {
+        padding-top: 0;
+    }
+
+    .tav-mobile-menu-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        border: 1px solid var(--tav-border);
+        border-radius: 10px;
+        background: #fff !important;
+        color: var(--tav-text-primary) !important;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: background .15s ease, border-color .15s ease;
+        box-shadow: none;
+        appearance: none;
+        -webkit-appearance: none;
+        text-transform: none;
+        min-width: 0;
+    }
+
+    .tav-mobile-menu-btn:hover,
+    .tav-mobile-menu-btn:focus,
+    .tav-mobile-menu-btn:active {
+        background: #f8fafc !important;
+        border-color: var(--tav-accent);
+        color: var(--tav-accent) !important;
+        box-shadow: none;
+        outline: none;
+    }
+
+    .tav-mobile-header-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--tav-text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .tav-sidebar-overlay {
         display: none;
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: min(var(--tav-sidebar-w), 85vw);
+        z-index: 300;
+        width: auto;
+        height: auto;
+        background: rgba(15, 23, 42, 0.45) !important;
+        opacity: 1;
+        visibility: visible;
+        pointer-events: none;
+        transition: opacity .25s ease;
+    }
+
+    .tav-dashboard-wrap.is-mobile-nav-open .tav-sidebar-overlay {
+        display: block;
+        pointer-events: auto;
+    }
+
+    .tav-main {
+        flex-direction: column;
+        margin-left: 0 !important;
+    }
+
+    .tav-front-portal .tav-sidebar,
+    body.tav-admin-portal-page .tav-sidebar,
+    .tav-sidebar {
+        position: fixed !important;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        height: auto;
+        max-height: none;
+        width: min(var(--tav-sidebar-w), 85vw) !important;
+        z-index: 400 !important;
+        transform: translateX(-100%);
+        transition: transform .25s cubic-bezier(0.4, 0, 0.2, 1), width .25s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+    }
+
+    .tav-content-column {
+        margin-left: 0 !important;
+    }
+
+    .tav-dashboard-wrap.is-mobile-nav-open .tav-sidebar {
+        transform: translateX(0);
+    }
+
+    .tav-sidebar-collapse-btn {
+        display: none;
+    }
+
+    /* Always show full labels in the mobile drawer */
+    .tav-sidebar.collapsed {
+        width: min(var(--tav-sidebar-w), 85vw) !important;
+    }
+
+    .tav-sidebar.collapsed .tav-sidebar-brand {
+        opacity: 1;
+        visibility: visible;
+        height: auto;
+        min-height: 42px;
+        padding: 0 42px 0 6px;
+        overflow: visible;
+    }
+
+    .tav-sidebar.collapsed .tav-sidebar-header {
+        min-height: 72px;
+    }
+
+    .tav-sidebar.collapsed .tav-sidebar-brand-text,
+    .tav-sidebar.collapsed .tav-nav-text {
+        opacity: 1;
+        pointer-events: auto;
+        width: auto;
+        overflow: visible;
+        white-space: normal;
+    }
+
+    .tav-sidebar.collapsed .tav-sidebar-section-label,
+    .tav-sidebar.collapsed .tav-user-info {
+        display: block;
+    }
+
+    .tav-sidebar.collapsed .tav-nav-badge {
+        position: static;
+        min-width: 20px;
+        height: 20px;
+        font-size: 11px;
+        margin-left: auto;
+    }
+
+    .tav-sidebar.collapsed .tav-sidebar-nav a {
+        justify-content: flex-start;
+        padding: 10px 14px;
+    }
+
+    .tav-sidebar.collapsed .tav-sidebar-nav a span:not(.tav-nav-icon):not(.tav-nav-badge) {
+        display: inline;
+    }
+
+    .tav-sidebar.collapsed .tav-sidebar-bottom-section {
+        padding: 0 12px 16px;
+    }
+
+    .tav-sidebar.collapsed .tav-sidebar-user-card {
+        justify-content: flex-start;
+        padding: 10px 12px;
+    }
+
+    .tav-sidebar.collapsed .tav-user-avatar {
+        width: 40px;
+        height: 40px;
+    }
+
+    body.tav-page.admin-bar .tav-sidebar {
+        top: 46px;
+        bottom: 0;
+        height: auto;
+        max-height: none;
+    }
+
+    body.tav-page.admin-bar .tav-sidebar-overlay {
+        top: 46px;
+    }
+
+    body.tav-page.admin-bar .tav-mobile-header {
+        top: 46px;
+    }
+
+    body.tav-mobile-nav-open {
+        overflow: hidden;
     }
 
     .tav-boutique-table-wrap {
@@ -1256,11 +1600,26 @@ body.tav-admin-portal-page .tav-main {
     .tav-content {
         padding: 24px 20px 40px;
     }
+
+    .tav-front-portal .tav-content,
+    body.tav-admin-portal-page .tav-content {
+        padding: 20px 16px 40px;
+    }
+
+    .tav-dashboard-wrap.is-mobile-nav-open {
+        overflow: hidden;
+    }
 }
 
 @media (max-width: 600px) {
     .tav-stats-grid {
         grid-template-columns: 1fr;
+    }
+
+    .tav-content,
+    .tav-front-portal .tav-content,
+    body.tav-admin-portal-page .tav-content {
+        padding: 16px 12px 32px;
     }
 }
 
@@ -2172,16 +2531,21 @@ body.tav-admin-portal-page .tav-main {
 
 .tav-dashboard-layout {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 320px;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
     gap: 24px;
     align-items: start;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .tav-dashboard-main {
     min-width: 0;
+    max-width: 100%;
     display: flex;
     flex-direction: column;
     gap: 24px;
+    order: 1;
 }
 
 .tav-dashboard-rail {
@@ -2189,11 +2553,14 @@ body.tav-admin-portal-page .tav-main {
     flex-direction: column;
     gap: 20px;
     min-width: 0;
+    max-width: 100%;
+    order: 2;
 }
 
 .tav-stats-grid--compact {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     margin-bottom: 0;
+    min-width: 0;
 }
 
 .tav-chart-header {
@@ -2424,6 +2791,13 @@ body.tav-admin-portal-page .tav-main {
 .tav-activity-panel,
 .tav-storytellers-panel {
     overflow: hidden;
+    min-width: 0;
+}
+
+.tav-revenue-chart-panel,
+.tav-fulfillment-center {
+    min-width: 0;
+    max-width: 100%;
 }
 
 .tav-activity-list {
@@ -2484,6 +2858,35 @@ body.tav-admin-portal-page .tav-main {
         grid-template-columns: 1fr;
     }
 
+    .tav-dashboard-main {
+        order: 1;
+    }
+
+    .tav-dashboard-rail {
+        order: 2;
+    }
+
+    .tav-stats-grid--compact {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+/* Stack when the content column is too narrow (e.g. WP admin menu + devtools) */
+@container tav-page (max-width: 1080px) {
+    .tav-dashboard-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .tav-dashboard-main {
+        order: 1;
+    }
+
+    .tav-dashboard-rail {
+        order: 2;
+    }
+}
+
+@container tav-page (max-width: 720px) {
     .tav-stats-grid--compact {
         grid-template-columns: 1fr;
     }
@@ -2674,12 +3077,14 @@ body.tav-admin-portal-page .tav-main {
 /* ── Requests Table ───────────────────────────────────────────── */
 .tav-requests-table-wrap {
     border-radius: 12px;
-    overflow: hidden;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
 }
 
 .tav-requests-table {
     width: 100%;
+    min-width: var(--tav-table-min-width);
     table-layout: fixed;
 }
 
@@ -2789,6 +3194,7 @@ body.tav-admin-portal-page .tav-main {
     border-radius: 20px;
     font-size: 12px;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .tav-status-dot {
@@ -2892,7 +3298,7 @@ body.tav-admin-portal-page .tav-main {
     display: flex;
     align-items: center;
     gap: 6px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: flex-end;
 }
 
@@ -3728,6 +4134,7 @@ body.tav-admin-portal-page .tav-main {
     border-radius: 16px;
     font-size: 12px;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .tav-status-dot {
@@ -5245,16 +5652,12 @@ body.tav-admin-portal-page .tav-main {
    ══════════════════════════════════════════════════════════════ */
 
 @media (max-width: 1200px) {
-    .tav-dashboard-rail {
-        order: -1;
-    }
-    
     .tav-dashboard-rail .tav-panel {
         max-height: none;
     }
-    
+
     .tav-activity-list {
-        max-height: 300px;
+        max-height: 360px;
         overflow-y: auto;
     }
 }
@@ -5366,6 +5769,9 @@ body.tav-admin-portal-page .tav-main {
 
 .tav-storytellers-table-wrap {
     margin-bottom: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
 }
 
 .tav-storytellers-table thead th {
@@ -5511,12 +5917,138 @@ body.tav-admin-portal-page .tav-main {
     }
 }
 
+/* ============================================================
+   RESPONSIVE TABLES — shared column standards (admin panel)
+   ============================================================ */
+
+.tav-boutique-table-wrap .tav-boutique-table,
+.tav-requests-table-wrap .tav-requests-table,
+.tav-storytellers-table-wrap .tav-storytellers-table,
+.tav-clients-table {
+    min-width: var(--tav-table-min-width);
+}
+
+/* Requests table — compact columns */
+.tav-col-status,
+.tav-col-submitted,
+.tav-col-due,
+.tav-col-actions {
+    white-space: nowrap;
+}
+
+.tav-col-status {
+    min-width: var(--tav-col-status-min);
+}
+
+.tav-col-submitted,
+.tav-col-due {
+    min-width: var(--tav-col-date-min);
+}
+
+.tav-col-actions {
+    min-width: var(--tav-col-actions-min);
+}
+
+.tav-col-project {
+    min-width: 180px;
+}
+
+/* Clients table — amounts, dates, status, actions */
+.tav-clients-table th:nth-child(4),
+.tav-clients-table td:nth-child(4) {
+    min-width: var(--tav-col-count-min);
+    white-space: nowrap;
+}
+
+.tav-clients-table th:nth-child(5),
+.tav-clients-table td:nth-child(5) {
+    min-width: var(--tav-col-amount-min);
+    white-space: nowrap;
+}
+
+.tav-clients-table th:nth-child(6),
+.tav-clients-table td:nth-child(6) {
+    min-width: var(--tav-col-date-min);
+    white-space: nowrap;
+}
+
+.tav-clients-table th:nth-child(7),
+.tav-clients-table td:nth-child(7) {
+    min-width: var(--tav-col-status-min);
+    white-space: nowrap;
+}
+
+.tav-clients-table th:nth-child(8),
+.tav-clients-table td:nth-child(8),
+.tav-clients-table .tav-col-actions {
+    min-width: var(--tav-col-actions-min);
+    white-space: nowrap;
+}
+
+/* Storytellers table — numeric / badge columns */
+.tav-storytellers-table th:nth-child(5),
+.tav-storytellers-table td:nth-child(5),
+.tav-storytellers-table th:nth-child(6),
+.tav-storytellers-table td:nth-child(6),
+.tav-storytellers-table th:nth-child(7),
+.tav-storytellers-table td:nth-child(7),
+.tav-storytellers-table th:nth-child(8),
+.tav-storytellers-table td:nth-child(8) {
+    white-space: nowrap;
+}
+
+.tav-storytellers-table th:nth-child(5),
+.tav-storytellers-table td:nth-child(5) {
+    min-width: var(--tav-col-count-min);
+}
+
+.tav-storytellers-table th:nth-child(6),
+.tav-storytellers-table td:nth-child(6),
+.tav-storytellers-table th:nth-child(7),
+.tav-storytellers-table td:nth-child(7) {
+    min-width: var(--tav-col-status-min);
+}
+
+.tav-storytellers-table th:nth-child(8),
+.tav-storytellers-table td:nth-child(8) {
+    min-width: var(--tav-col-actions-min);
+}
+
+.tav-storytellers-table thead th,
+.tav-clients-table th {
+    white-space: nowrap;
+}
+
+.tav-verified-pill,
+.tav-pill,
+.tav-status-badge,
+.tav-status-pill,
+.tav-engagement-badge {
+    white-space: nowrap;
+}
+
+.tav-mini-table {
+    min-width: 480px;
+}
+
+.tav-mini-table th,
+.tav-mini-table td {
+    white-space: nowrap;
+}
+
+.tav-mini-table .tav-mini-title {
+    min-width: 120px;
+    max-width: 220px;
+}
+
 /* ══════════════════════════════════════════════════════════════
    PRINT STYLES
    ══════════════════════════════════════════════════════════════ */
 
 @media print {
     .tav-sidebar,
+    .tav-mobile-header,
+    .tav-sidebar-overlay,
     .tav-dashboard-rail,
     .tav-filter-bar,
     .tav-btn-primary,

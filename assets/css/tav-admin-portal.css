@@ -100,28 +100,37 @@ body.tav-admin-portal-page .tav-dashboard-wrap .tav-email-textarea,
     align-items: flex-start;
 }
 
-@media (max-width: 960px) {
-    .tav-front-portal .tav-main {
-        margin-left: var(--tav-sidebar-collapsed-w, 68px);
-    }
-
-    .tav-front-portal .tav-main:has(.tav-sidebar:not(.collapsed)),
-    .tav-front-portal .tav-dashboard-wrap:not(.is-sidebar-collapsed) .tav-main {
-        margin-left: var(--tav-sidebar-w, 240px);
-    }
-
-    .tav-front-portal .tav-content {
-        padding: 20px 16px 40px;
-    }
+/* Prevent theme / Elementor global button styles from breaking mobile nav */
+body.tav-admin-portal-page .tav-sidebar-overlay,
+.tav-front-portal .tav-sidebar-overlay {
+    background: rgba(15, 23, 42, 0.45) !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: transparent !important;
 }
 
-@media (max-width: 640px) {
-    .tav-front-portal .tav-main,
-    .tav-front-portal .tav-dashboard-wrap.is-sidebar-collapsed .tav-main {
-        margin-left: var(--tav-sidebar-collapsed-w, 68px);
-    }
+body.tav-admin-portal-page .tav-sidebar-overlay:hover,
+body.tav-admin-portal-page .tav-sidebar-overlay:focus,
+body.tav-admin-portal-page .tav-sidebar-overlay:active,
+.tav-front-portal .tav-sidebar-overlay:hover,
+.tav-front-portal .tav-sidebar-overlay:focus,
+.tav-front-portal .tav-sidebar-overlay:active {
+    background: rgba(15, 23, 42, 0.45) !important;
+    color: transparent !important;
+}
 
-    .tav-front-portal .tav-content {
-        padding: 16px 12px 32px;
-    }
+body.tav-admin-portal-page .tav-mobile-menu-btn,
+.tav-front-portal .tav-mobile-menu-btn {
+    background: #fff !important;
+    border: 1px solid var(--tav-border, #e2e8f0) !important;
+    color: var(--tav-text-primary, #0f172a) !important;
+}
+
+body.tav-admin-portal-page .tav-mobile-menu-btn:hover,
+body.tav-admin-portal-page .tav-mobile-menu-btn:focus,
+.tav-front-portal .tav-mobile-menu-btn:hover,
+.tav-front-portal .tav-mobile-menu-btn:focus {
+    background: #f8fafc !important;
+    border-color: var(--tav-accent, #269EB2) !important;
+    color: var(--tav-accent, #269EB2) !important;
 }
