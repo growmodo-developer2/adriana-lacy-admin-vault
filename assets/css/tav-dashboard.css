@@ -31,6 +31,10 @@
     --tav-col-count-min: 72px;
     --tav-sidebar-top: 0px;
     --tav-sidebar-left: 0px;
+    --tav-sidebar-z: 320;
+    --tav-sidebar-z-overlay: 1200;
+    --tav-sidebar-backdrop-z: 1190;
+    --tav-sidebar-tooltip-z: 500;
 }
 
 /* ── Full-page wrap — bleeds into WP admin chrome ──────────── */
@@ -104,7 +108,13 @@ body.tav-page.auto-fold:not(.tav-admin-portal-page) {
     height: auto;
     max-height: none;
     overflow: hidden;
-    z-index: 100;
+    z-index: var(--tav-sidebar-z, 320);
+}
+
+.tav-dashboard-wrap.is-sidebar-open .tav-sidebar,
+.tav-front-portal.tav-dashboard-wrap.is-sidebar-open .tav-sidebar,
+body.tav-admin-portal-page .tav-dashboard-wrap.is-sidebar-open .tav-sidebar {
+    z-index: var(--tav-sidebar-z-overlay, 1200);
 }
 
 /* Front-end portal: flush to viewport edge */
@@ -112,7 +122,7 @@ body.tav-page.auto-fold:not(.tav-admin-portal-page) {
 body.tav-admin-portal-page .tav-sidebar {
     left: 0;
     top: 0;
-    z-index: 200;
+    z-index: var(--tav-sidebar-z, 320);
 }
 
 .tav-sidebar.collapsed {
@@ -416,7 +426,7 @@ body.tav-admin-portal-page .tav-sidebar {
     visibility: hidden;
     pointer-events: none;
     transition: opacity 0.15s ease, visibility 0.15s ease;
-    z-index: 500;
+    z-index: var(--tav-sidebar-tooltip-z, 500);
 }
 
 .tav-sidebar.collapsed [data-tooltip]:hover::after,
@@ -572,13 +582,13 @@ body.tav-admin-portal-page .tav-sidebar {
     .tav-dashboard-wrap.is-mobile-sidebar.is-sidebar-collapsed .tav-sidebar {
         width: var(--tav-sidebar-collapsed-w);
         left: 0;
-        z-index: 200;
+        z-index: var(--tav-sidebar-z, 320);
     }
 
     .tav-dashboard-wrap.is-mobile-sidebar.is-sidebar-open .tav-sidebar {
         width: min(280px, 85vw);
         left: 0;
-        z-index: 300;
+        z-index: var(--tav-sidebar-z-overlay, 1200);
         box-shadow: 4px 0 24px rgba(15, 23, 42, 0.18);
     }
 
@@ -587,7 +597,7 @@ body.tav-admin-portal-page .tav-sidebar {
         position: fixed;
         inset: 0;
         background: rgba(15, 23, 42, 0.45);
-        z-index: 250;
+        z-index: var(--tav-sidebar-backdrop-z, 1190);
     }
 
     .tav-dashboard-wrap.is-mobile-sidebar.is-sidebar-open .tav-sidebar-backdrop {
