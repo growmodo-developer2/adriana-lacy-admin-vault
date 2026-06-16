@@ -3,7 +3,7 @@
  * Plugin Name:  The Admin Vault
  * Plugin URI:   https://github.com/oyic/the-admin-vault
  * Description:  A private, admin-only vault for managing Storyteller profiles — social handles, verified metrics, private contact info, and authenticity scores. Built on ACF Pro.
- * Version:      1.3.6
+ * Version:      1.3.7
  * Author:       OYIC
  * Author URI:   https://oyic.com
  * License:      GPL-2.0-or-later
@@ -16,7 +16,7 @@ defined('ABSPATH') || exit;
 /*--------------------------------------------------------------
  * Constants
  *------------------------------------------------------------*/
-define('TAV_VERSION', '1.3.6');
+define('TAV_VERSION', '1.3.7');
 define('TAV_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('TAV_PLUGIN_URL', plugin_dir_url(__FILE__));
 

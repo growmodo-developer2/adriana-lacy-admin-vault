@@ -1966,7 +1966,7 @@ body.tav-admin-portal-page .tav-main {
 /* ── Brief Grid ──────────────────────────────────────────── */
 .tav-req-brief-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(160px, 1fr));
     gap: 14px 24px;
 }
 
@@ -1997,6 +1997,9 @@ body.tav-admin-portal-page .tav-main {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    min-width: 0;
+    word-break: normal;
+    overflow-wrap: break-word;
 }
 
 /* Email link inside brief value */
@@ -2222,8 +2225,9 @@ body.tav-admin-portal-page .tav-main {
 .tav-empty-state { color: #999; font-style: italic; font-size: 13px; padding: 12px 0; }
 
 .tav-brief-row {
-    display: flex;
-    gap: 12px;
+    display: grid;
+    grid-template-columns: minmax(110px, 130px) minmax(160px, 1fr);
+    gap: 4px 12px;
     align-items: baseline;
     padding: 8px 0;
     border-bottom: 1px solid #f3f4f6;
@@ -2231,7 +2235,6 @@ body.tav-admin-portal-page .tav-main {
 }
 .tav-brief-row:last-of-type { border-bottom: none; }
 .tav-brief-label {
-    flex: 0 0 130px;
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
@@ -2239,10 +2242,11 @@ body.tav-admin-portal-page .tav-main {
     color: var(--tav-text-muted, #64748b);
 }
 .tav-brief-value {
-    flex: 1;
+    min-width: 160px;
     color: #1f2937;
     line-height: 1.5;
-    word-break: break-word;
+    word-break: normal;
+    overflow-wrap: break-word;
 }
 .tav-brief-value p:first-child { margin-top: 0; }
 .tav-brief-value p:last-child { margin-bottom: 0; }
@@ -4069,6 +4073,7 @@ body.tav-admin-portal-page .tav-main {
 /* Brief Content Styling */
 .tav-brief-content {
     padding: 20px;
+    min-width: 0;
 }
 
 .tav-brief-content h4 {
@@ -4088,6 +4093,22 @@ body.tav-admin-portal-page .tav-main {
     font-size: 13px;
     color: var(--tav-text-secondary);
     line-height: 1.6;
+    min-width: 0;
+    word-break: normal;
+    overflow-wrap: break-word;
+}
+
+/* Stack brief labels/values when the left panel is too narrow for side-by-side */
+@media (max-width: 1280px) {
+    .tav-fulfillment-grid .tav-brief-row {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+
+    .tav-fulfillment-grid .tav-brief-value {
+        min-width: 0;
+        width: 100%;
+    }
 }
 
 /* Fulfillment Search Form */
@@ -4239,7 +4260,7 @@ body.tav-admin-portal-page .tav-main {
     border-top: 1px solid var(--tav-border);
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1200px) {
     .tav-fulfillment-grid {
         grid-template-columns: 1fr !important;
     }
