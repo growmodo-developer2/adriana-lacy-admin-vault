@@ -51,15 +51,55 @@ body.tav-admin-portal-page .tav-dashboard-wrap select,
     background: #fff !important;
 }
 
+body.tav-admin-portal-page .tav-dashboard-wrap .tav-search-input-wrap input,
+.tav-front-portal.tav-dashboard-wrap .tav-search-input-wrap input {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+body.tav-admin-portal-page .tav-dashboard-wrap .tav-admin-um-account input.um-iconed,
+.tav-front-portal.tav-dashboard-wrap .tav-admin-um-account input.um-iconed {
+    padding-left: 44px !important;
+    padding-right: 14px !important;
+}
+
+body.tav-admin-portal-page .tav-dashboard-wrap .tav-admin-um-account .um-field-area-password input,
+.tav-front-portal.tav-dashboard-wrap .tav-admin-um-account .um-field-area-password input {
+    padding-right: 44px !important;
+}
+
 body.tav-admin-portal-page .tav-dashboard-wrap .tav-btn,
 body.tav-admin-portal-page .tav-dashboard-wrap .tav-email-pill-tab,
 body.tav-admin-portal-page .tav-dashboard-wrap .tav-email-chip,
-body.tav-admin-portal-page .tav-dashboard-wrap .tav-sidebar-collapse-btn,
+body.tav-admin-portal-page .tav-dashboard-wrap .tav-sidebar-logo-btn,
 .tav-front-portal.tav-dashboard-wrap .tav-btn,
 .tav-front-portal.tav-dashboard-wrap .tav-email-pill-tab,
 .tav-front-portal.tav-dashboard-wrap .tav-email-chip,
-.tav-front-portal.tav-dashboard-wrap .tav-sidebar-collapse-btn {
+.tav-front-portal.tav-dashboard-wrap .tav-sidebar-logo-btn {
     border-color: transparent;
+}
+
+body.tav-admin-portal-page .tav-dashboard-wrap .tav-sidebar-logo-btn,
+.tav-front-portal.tav-dashboard-wrap .tav-sidebar-logo-btn {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+body.tav-admin-portal-page .tav-dashboard-wrap .tav-sidebar-logo-btn:hover,
+body.tav-admin-portal-page .tav-dashboard-wrap .tav-sidebar-logo-btn:focus,
+body.tav-admin-portal-page .tav-dashboard-wrap .tav-sidebar-logo-btn:active,
+body.tav-admin-portal-page .tav-dashboard-wrap .tav-sidebar-logo-btn:focus-visible,
+.tav-front-portal.tav-dashboard-wrap .tav-sidebar-logo-btn:hover,
+.tav-front-portal.tav-dashboard-wrap .tav-sidebar-logo-btn:focus,
+.tav-front-portal.tav-dashboard-wrap .tav-sidebar-logo-btn:active,
+.tav-front-portal.tav-dashboard-wrap .tav-sidebar-logo-btn:focus-visible {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
 }
 
 body.tav-admin-portal-page .tav-dashboard-wrap .tav-btn-outline,
@@ -100,37 +140,26 @@ body.tav-admin-portal-page .tav-dashboard-wrap .tav-email-textarea,
     align-items: flex-start;
 }
 
-/* Prevent theme / Elementor global button styles from breaking mobile nav */
-body.tav-admin-portal-page .tav-sidebar-overlay,
-.tav-front-portal .tav-sidebar-overlay {
-    background: rgba(15, 23, 42, 0.45) !important;
-    border: none !important;
-    box-shadow: none !important;
-    color: transparent !important;
+.ccc-admin-account-settings .tav-admin-account-wrap {
+    width: 100%;
+    max-width: 100%;
 }
 
-body.tav-admin-portal-page .tav-sidebar-overlay:hover,
-body.tav-admin-portal-page .tav-sidebar-overlay:focus,
-body.tav-admin-portal-page .tav-sidebar-overlay:active,
-.tav-front-portal .tav-sidebar-overlay:hover,
-.tav-front-portal .tav-sidebar-overlay:focus,
-.tav-front-portal .tav-sidebar-overlay:active {
-    background: rgba(15, 23, 42, 0.45) !important;
-    color: transparent !important;
+.ccc-admin-account-settings .um-account-main,
+.ccc-admin-account-settings .tav-admin-um-account .um-account-main {
+    float: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
 }
 
-body.tav-admin-portal-page .tav-mobile-menu-btn,
-.tav-front-portal .tav-mobile-menu-btn {
-    background: #fff !important;
-    border: 1px solid var(--tav-border, #e2e8f0) !important;
-    color: var(--tav-text-primary, #0f172a) !important;
-}
-
-body.tav-admin-portal-page .tav-mobile-menu-btn:hover,
-body.tav-admin-portal-page .tav-mobile-menu-btn:focus,
-.tav-front-portal .tav-mobile-menu-btn:hover,
-.tav-front-portal .tav-mobile-menu-btn:focus {
-    background: #f8fafc !important;
-    border-color: var(--tav-accent, #269EB2) !important;
-    color: var(--tav-accent, #269EB2) !important;
+.ccc-admin-account-settings .um-field,
+.ccc-admin-account-settings .um-field-half,
+.ccc-admin-account-settings .um-half,
+.ccc-admin-account-settings .um-left,
+.ccc-admin-account-settings .um-right {
+    float: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    clear: both !important;
 }

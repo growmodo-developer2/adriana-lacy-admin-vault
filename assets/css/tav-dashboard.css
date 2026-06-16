@@ -25,7 +25,7 @@
     --tav-font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     --tav-table-min-width: 900px;
     --tav-col-date-min: 110px;
-    --tav-col-status-min: 130px;
+    --tav-col-status-min: 168px;
     --tav-col-actions-min: 140px;
     --tav-col-amount-min: 90px;
     --tav-col-count-min: 72px;
@@ -153,73 +153,76 @@ body.tav-admin-portal-page .tav-sidebar {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 0 42px 0 6px;
+    padding: 0 6px;
     min-height: 42px;
     transition: opacity .2s ease;
 }
 
-.tav-sidebar-logo {
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
-    background: var(--tav-accent-yellow, #FFE45C);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--tav-dark, #283435);
-    flex-shrink: 0;
-}
-
-.tav-sidebar-logo-mark {
-    font-size: 14px;
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    line-height: 1;
-}
-
-.tav-sidebar-collapse-btn {
-    position: absolute;
-    top: 18px;
-    right: 10px;
-    width: 34px;
-    height: 34px;
-    border: none;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.12);
-    color: #fff;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+.tav-sidebar-logo-btn {
+    border: none !important;
+    background: transparent !important;
+    padding: 0;
+    margin: 0;
     cursor: pointer;
     flex-shrink: 0;
-    transition: background 0.2s ease;
-    padding: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    box-shadow: none !important;
+    outline: none !important;
+    line-height: 0;
+    color: inherit;
 }
 
-.tav-sidebar-collapse-btn:hover {
-    background: rgba(255, 255, 255, 0.22);
+.tav-sidebar-logo-btn:hover,
+.tav-sidebar-logo-btn:focus,
+.tav-sidebar-logo-btn:active,
+.tav-sidebar-logo-btn:focus-visible,
+.tav-sidebar-logo-btn:focus:not(:focus-visible) {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: transparent !important;
 }
 
-.tav-sidebar-collapse-btn:focus-visible {
-    outline: 2px solid rgba(255, 255, 255, 0.85);
-    outline-offset: 2px;
-}
-
-.tav-collapse-icon {
+.tav-sidebar-logo {
     display: block;
+    width: 145px;
+    max-width: calc(100% - 8px);
+    height: 41px;
+    flex-shrink: 0;
+    background: none;
+    border-radius: 0;
 }
 
-.tav-collapse-icon--expand {
+.tav-sidebar-logo-img {
+    display: block;
+    width: 100%;
+    height: 41px;
+    object-fit: contain;
+    object-position: left center;
+}
+
+.tav-sidebar-logo-img--collapsed {
     display: none;
 }
 
+.tav-sidebar.collapsed .tav-sidebar-logo {
+    width: 70px;
+    max-width: 70px;
+}
+
+.tav-sidebar.collapsed .tav-sidebar-logo-img--expanded {
+    display: none;
+}
+
+.tav-sidebar.collapsed .tav-sidebar-logo-img--collapsed {
+    display: block;
+}
+
 .tav-sidebar.collapsed .tav-sidebar-brand {
-    opacity: 0;
-    visibility: hidden;
-    height: 0;
-    min-height: 0;
     padding: 0;
-    overflow: hidden;
+    gap: 0;
+    justify-content: center;
 }
 
 .tav-sidebar.collapsed .tav-sidebar-header {
@@ -228,44 +231,6 @@ body.tav-admin-portal-page .tav-sidebar {
     display: flex;
     align-items: center;
     justify-content: center;
-}
-
-.tav-sidebar.collapsed .tav-sidebar-collapse-btn {
-    position: static;
-    top: auto;
-    right: auto;
-    margin: 0 auto;
-}
-
-.tav-sidebar.collapsed .tav-collapse-icon--collapse {
-    display: none;
-}
-
-.tav-sidebar.collapsed .tav-collapse-icon--expand {
-    display: block;
-}
-
-.tav-sidebar-logo:hover {
-    background: var(--tav-accent, #FFE45C);
-}
-
-.tav-sidebar-logo svg {
-    width: 24px;
-    height: 24px;
-}
-
-.tav-sidebar-brand-text {
-    display: flex;
-    flex-direction: column;
-    transition: opacity .2s ease;
-}
-
-.tav-sidebar.collapsed .tav-sidebar-brand-text {
-    opacity: 0;
-    pointer-events: none;
-    width: 0;
-    overflow: hidden;
-    white-space: nowrap;
 }
 
 .tav-sidebar-brand-title {
@@ -649,19 +614,14 @@ body.tav-admin-portal-page .tav-main {
     margin-left: 0;
 }
 
-@media (min-width: 961px) {
-    .tav-content-column {
-        margin-left: var(--tav-current-sidebar-w, var(--tav-sidebar-w));
-        transition: margin-left .25s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-}
-
 .tav-content-column {
     flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    margin-left: var(--tav-current-sidebar-w, var(--tav-sidebar-w));
+    transition: margin-left .25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .tav-content {
@@ -1336,43 +1296,6 @@ body.tav-admin-portal-page .tav-main {
     font-size: 13px;
 }
 
-/* ── Mobile nav (hidden on desktop) ─────────────────────────── */
-.tav-mobile-header {
-    display: none;
-}
-
-.tav-sidebar-overlay {
-    display: none;
-    appearance: none;
-    -webkit-appearance: none;
-    margin: 0;
-    padding: 0;
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
-    outline: none;
-    background: rgba(15, 23, 42, 0.45) !important;
-    color: transparent;
-    font-size: 0;
-    line-height: 0;
-    min-width: 0;
-    min-height: 0;
-    width: auto;
-    height: auto;
-    text-transform: none;
-    cursor: pointer;
-}
-
-.tav-sidebar-overlay:hover,
-.tav-sidebar-overlay:focus,
-.tav-sidebar-overlay:active {
-    background: rgba(15, 23, 42, 0.45) !important;
-    color: transparent;
-    border: none;
-    box-shadow: none;
-    outline: none;
-}
-
 /* ── Responsive ────────────────────────────────────────────── */
 @media (max-width: 1200px) {
     .tav-stats-grid {
@@ -1389,204 +1312,8 @@ body.tav-admin-portal-page .tav-main {
         padding-bottom: 0;
     }
 
-    .tav-mobile-header {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        position: sticky;
-        top: 0;
-        z-index: 350;
-        margin: 0;
-        padding: 12px 16px;
-        background: var(--tav-card-bg);
-        border-bottom: 1px solid var(--tav-border);
-        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
-        flex-shrink: 0;
-    }
-
     .tav-content-column {
         width: 100%;
-    }
-
-    .tav-content {
-        padding-top: 0;
-    }
-
-    .tav-mobile-menu-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 40px;
-        height: 40px;
-        padding: 0;
-        border: 1px solid var(--tav-border);
-        border-radius: 10px;
-        background: #fff !important;
-        color: var(--tav-text-primary) !important;
-        cursor: pointer;
-        flex-shrink: 0;
-        transition: background .15s ease, border-color .15s ease;
-        box-shadow: none;
-        appearance: none;
-        -webkit-appearance: none;
-        text-transform: none;
-        min-width: 0;
-    }
-
-    .tav-mobile-menu-btn:hover,
-    .tav-mobile-menu-btn:focus,
-    .tav-mobile-menu-btn:active {
-        background: #f8fafc !important;
-        border-color: var(--tav-accent);
-        color: var(--tav-accent) !important;
-        box-shadow: none;
-        outline: none;
-    }
-
-    .tav-mobile-header-title {
-        font-size: 15px;
-        font-weight: 700;
-        color: var(--tav-text-primary);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .tav-sidebar-overlay {
-        display: none;
-        position: fixed;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        left: min(var(--tav-sidebar-w), 85vw);
-        z-index: 300;
-        width: auto;
-        height: auto;
-        background: rgba(15, 23, 42, 0.45) !important;
-        opacity: 1;
-        visibility: visible;
-        pointer-events: none;
-        transition: opacity .25s ease;
-    }
-
-    .tav-dashboard-wrap.is-mobile-nav-open .tav-sidebar-overlay {
-        display: block;
-        pointer-events: auto;
-    }
-
-    .tav-main {
-        flex-direction: column;
-        margin-left: 0 !important;
-    }
-
-    .tav-front-portal .tav-sidebar,
-    body.tav-admin-portal-page .tav-sidebar,
-    .tav-sidebar {
-        position: fixed !important;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        height: auto;
-        max-height: none;
-        width: min(var(--tav-sidebar-w), 85vw) !important;
-        z-index: 400 !important;
-        transform: translateX(-100%);
-        transition: transform .25s cubic-bezier(0.4, 0, 0.2, 1), width .25s cubic-bezier(0.4, 0, 0.2, 1);
-        overflow: hidden;
-    }
-
-    .tav-content-column {
-        margin-left: 0 !important;
-    }
-
-    .tav-dashboard-wrap.is-mobile-nav-open .tav-sidebar {
-        transform: translateX(0);
-    }
-
-    .tav-sidebar-collapse-btn {
-        display: none;
-    }
-
-    /* Always show full labels in the mobile drawer */
-    .tav-sidebar.collapsed {
-        width: min(var(--tav-sidebar-w), 85vw) !important;
-    }
-
-    .tav-sidebar.collapsed .tav-sidebar-brand {
-        opacity: 1;
-        visibility: visible;
-        height: auto;
-        min-height: 42px;
-        padding: 0 42px 0 6px;
-        overflow: visible;
-    }
-
-    .tav-sidebar.collapsed .tav-sidebar-header {
-        min-height: 72px;
-    }
-
-    .tav-sidebar.collapsed .tav-sidebar-brand-text,
-    .tav-sidebar.collapsed .tav-nav-text {
-        opacity: 1;
-        pointer-events: auto;
-        width: auto;
-        overflow: visible;
-        white-space: normal;
-    }
-
-    .tav-sidebar.collapsed .tav-sidebar-section-label,
-    .tav-sidebar.collapsed .tav-user-info {
-        display: block;
-    }
-
-    .tav-sidebar.collapsed .tav-nav-badge {
-        position: static;
-        min-width: 20px;
-        height: 20px;
-        font-size: 11px;
-        margin-left: auto;
-    }
-
-    .tav-sidebar.collapsed .tav-sidebar-nav a {
-        justify-content: flex-start;
-        padding: 10px 14px;
-    }
-
-    .tav-sidebar.collapsed .tav-sidebar-nav a span:not(.tav-nav-icon):not(.tav-nav-badge) {
-        display: inline;
-    }
-
-    .tav-sidebar.collapsed .tav-sidebar-bottom-section {
-        padding: 0 12px 16px;
-    }
-
-    .tav-sidebar.collapsed .tav-sidebar-user-card {
-        justify-content: flex-start;
-        padding: 10px 12px;
-    }
-
-    .tav-sidebar.collapsed .tav-user-avatar {
-        width: 40px;
-        height: 40px;
-    }
-
-    body.tav-page.admin-bar .tav-sidebar {
-        top: 46px;
-        bottom: 0;
-        height: auto;
-        max-height: none;
-    }
-
-    body.tav-page.admin-bar .tav-sidebar-overlay {
-        top: 46px;
-    }
-
-    body.tav-page.admin-bar .tav-mobile-header {
-        top: 46px;
-    }
-
-    body.tav-mobile-nav-open {
-        overflow: hidden;
     }
 
     .tav-boutique-table-wrap {
@@ -1604,10 +1331,6 @@ body.tav-admin-portal-page .tav-main {
     .tav-front-portal .tav-content,
     body.tav-admin-portal-page .tav-content {
         padding: 20px 16px 40px;
-    }
-
-    .tav-dashboard-wrap.is-mobile-nav-open {
-        overflow: hidden;
     }
 }
 
@@ -2935,29 +2658,58 @@ body.tav-admin-portal-page .tav-main {
     position: relative;
     display: flex;
     align-items: center;
+    width: 100%;
+    gap: 10px;
+    padding: 0 14px;
+    min-height: 42px;
+    border: 1px solid var(--tav-border);
+    border-radius: 8px;
+    background: var(--tav-card-bg, #fff);
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.tav-search-input-wrap:focus-within {
+    border-color: var(--tav-accent);
+    box-shadow: 0 0 0 3px rgba(38, 158, 178, .1);
 }
 
 .tav-search-icon {
-    position: absolute;
-    left: 14px;
+    position: static;
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
     color: var(--tav-text-muted);
     pointer-events: none;
 }
 
-.tav-requests-search {
+.tav-search-input-wrap input[type="text"],
+.tav-search-input-wrap .tav-search-input,
+.tav-search-input-wrap .tav-requests-search {
+    flex: 1;
     width: 100%;
-    padding: 12px 16px 12px 44px;
-    border: 1px solid var(--tav-border);
-    border-radius: 8px;
+    min-width: 0;
+    margin: 0;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+    padding: 10px 0 !important;
     font-size: 14px;
-    background: var(--tav-card-bg);
-    transition: border-color .15s ease, box-shadow .15s ease;
+    line-height: 1.4;
+    color: var(--tav-text-primary, #1e293b);
 }
 
-.tav-requests-search:focus {
-    outline: none;
-    border-color: var(--tav-accent);
-    box-shadow: 0 0 0 3px rgba(38, 158, 178, .1);
+.tav-search-input-wrap input[type="text"]:focus,
+.tav-search-input-wrap .tav-search-input:focus,
+.tav-search-input-wrap .tav-requests-search:focus {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
+}
+
+.tav-requests-search-form .tav-search-input-wrap,
+.tav-search-form .tav-search-input-wrap {
+    width: 100%;
 }
 
 .tav-filters-toggle {
@@ -3091,7 +2843,7 @@ body.tav-admin-portal-page .tav-main {
 /* Column widths */
 .tav-requests-table .tav-col-project { width: 25%; }
 .tav-requests-table .tav-col-client { width: 15%; }
-.tav-requests-table .tav-col-status { width: 15%; }
+.tav-requests-table .tav-col-status { width: 18%; min-width: var(--tav-col-status-min); }
 .tav-requests-table .tav-col-submitted { width: 12%; }
 .tav-requests-table .tav-col-due { width: 10%; }
 .tav-requests-table .tav-col-actions { width: 23%; text-align: right; }
@@ -3127,6 +2879,10 @@ body.tav-admin-portal-page .tav-main {
     font-size: 14px;
     color: var(--tav-text-secondary);
     vertical-align: middle;
+}
+
+.tav-requests-table tbody td.tav-col-project {
+    overflow: hidden;
 }
 
 /* Project Name Cell */
@@ -3190,11 +2946,22 @@ body.tav-admin-portal-page .tav-main {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 12px;
-    border-radius: 20px;
+    padding: 5px 12px;
+    border-radius: 999px;
     font-size: 12px;
     font-weight: 500;
     white-space: nowrap;
+    line-height: 1.25;
+    box-sizing: border-box;
+    vertical-align: middle;
+}
+
+.tav-requests-table tbody td.tav-col-status,
+.tav-boutique-table tbody td.tav-col-status,
+.tav-clients-table tbody td.tav-col-status {
+    padding-left: 14px;
+    padding-right: 14px;
+    overflow: visible;
 }
 
 .tav-status-dot {
@@ -3297,8 +3064,8 @@ body.tav-admin-portal-page .tav-main {
 .tav-action-buttons {
     display: flex;
     align-items: center;
-    gap: 6px;
-    flex-wrap: nowrap;
+    gap: 8px;
+    flex-wrap: wrap;
     justify-content: flex-end;
 }
 
@@ -4047,33 +3814,7 @@ body.tav-admin-portal-page .tav-main {
     max-width: 400px;
 }
 
-.tav-search-input-wrap {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.tav-search-icon {
-    position: absolute;
-    left: 12px;
-    color: var(--tav-text-muted);
-    pointer-events: none;
-}
-
-.tav-search-input-wrap .tav-search-input {
-    width: 100%;
-    padding: 10px 14px 10px 40px;
-    border: 1px solid var(--tav-border);
-    border-radius: 8px;
-    font-size: 14px;
-    background: #fff;
-}
-
-.tav-search-input-wrap .tav-search-input:focus {
-    outline: none;
-    border-color: var(--tav-accent);
-    box-shadow: 0 0 0 3px rgba(38, 158, 178, 0.1);
-}
+/* Search input styles shared with requests toolbar (see .tav-search-input-wrap above) */
 
 .tav-filters-btn {
     display: flex;
@@ -4270,12 +4011,12 @@ body.tav-admin-portal-page .tav-main {
 }
 
 @media (max-width: 768px) {
-    .tav-boutique-table th:nth-child(2),
-    .tav-boutique-table td:nth-child(2),
-    .tav-boutique-table th:nth-child(3),
-    .tav-boutique-table td:nth-child(3),
-    .tav-boutique-table th:nth-child(5),
-    .tav-boutique-table td:nth-child(5) {
+    .tav-boutique-table:not(.tav-requests-table) th:nth-child(2),
+    .tav-boutique-table:not(.tav-requests-table) td:nth-child(2),
+    .tav-boutique-table:not(.tav-requests-table) th:nth-child(3),
+    .tav-boutique-table:not(.tav-requests-table) td:nth-child(3),
+    .tav-boutique-table:not(.tav-requests-table) th:nth-child(5),
+    .tav-boutique-table:not(.tav-requests-table) td:nth-child(5) {
         display: none;
     }
     
@@ -4837,6 +4578,8 @@ body.tav-admin-portal-page .tav-main {
     display: flex;
     gap: 28px;
     align-items: flex-start;
+    width: 100%;
+    max-width: 100%;
 }
 
 .tav-admin-account-sidebar {
@@ -4889,13 +4632,15 @@ body.tav-admin-portal-page .tav-main {
 }
 
 .tav-admin-account-content {
-    flex: 1;
+    flex: 1 1 auto;
+    width: 100%;
     min-width: 0;
     background: #fff;
     border: none;
     border-radius: 12px;
     padding: 28px 32px;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    box-sizing: border-box;
 }
 
 .tav-admin-account-panel-title {
@@ -4929,6 +4674,60 @@ body.tav-admin-portal-page .tav-main {
 .tav-admin-um-account .um-account-nav,
 .tav-admin-um-account .um-account-heading {
     display: none !important;
+}
+
+/* UM default account layout is 30/70 float — use full content width */
+.tav-admin-um-account,
+.tav-admin-um-account .um,
+.tav-admin-um-account .um-form,
+.tav-admin-um-account .um-account {
+    width: 100% !important;
+    max-width: 100% !important;
+    float: none !important;
+    box-sizing: border-box;
+}
+
+.tav-admin-um-account .um-account-main {
+    float: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.tav-admin-um-account .um-account-side {
+    width: 0 !important;
+    float: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.tav-admin-um-account .um-field,
+.tav-admin-um-account .um-field-half,
+.tav-admin-um-account .um-field-half.right,
+.tav-admin-um-account .um-half,
+.tav-admin-um-account .um-left,
+.tav-admin-um-account .um-right,
+.tav-admin-um-account .um-col-121,
+.tav-admin-um-account .um-col-122,
+.tav-admin-um-account .um-col-131,
+.tav-admin-um-account .um-col-132,
+.tav-admin-um-account .um-col-133 {
+    float: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    clear: both !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+.tav-admin-um-account .um-account-tab {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.tav-admin-um-account .um-clear {
+    clear: both;
 }
 
 .tav-admin-um-account .um-field-label {
@@ -4990,7 +4789,7 @@ body.tav-admin-portal-page .tav-main {
 
 .tav-native-field input {
     width: 100%;
-    max-width: 480px;
+    max-width: 100%;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
     padding: 10px 12px;
@@ -5021,6 +4820,86 @@ body.tav-admin-portal-page .tav-main {
     border-bottom: 1px solid #f1f5f9;
 }
 
+.tav-admin-account-content .ccc-profile-edit-btn,
+.tav-admin-account-content .ccc-profile-edit-btn:hover,
+.tav-admin-account-content .ccc-profile-edit-btn:focus,
+.tav-admin-account-content .ccc-profile-edit-btn:focus-visible {
+    border: 1px solid #e2e8f0 !important;
+    background: #fff !important;
+    color: #334155 !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+/* UM field icons / password toggle — prevent overlap with input borders */
+.tav-admin-um-account .um-field-area {
+    position: relative;
+}
+
+.tav-admin-um-account .um-field-area .um-field-icon {
+    left: 4px;
+    width: 40px;
+    top: 50%;
+    transform: translateY(-50%);
+    line-height: 1;
+    height: auto;
+    pointer-events: none;
+}
+
+.tav-admin-um-account input.um-iconed {
+    padding-left: 44px !important;
+    padding-right: 14px !important;
+}
+
+.tav-admin-um-account .um-field-area-password input {
+    padding-right: 44px !important;
+}
+
+.tav-admin-um-account .um-toggle-password {
+    right: 4px;
+    width: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    top: 2px;
+    height: calc(100% - 4px);
+    line-height: 1;
+}
+
+.tav-admin-account-content .ccc-account-avatar img,
+.tav-admin-account-content .ccc-account-avatar img.avatar,
+.tav-admin-account-content .ccc-account-avatar img.gravatar {
+    width: 180px !important;
+    height: 180px !important;
+    max-width: 180px !important;
+}
+
+@media (max-width: 1100px) {
+    .tav-admin-account-wrap {
+        flex-direction: column;
+    }
+
+    .tav-admin-account-sidebar {
+        width: 100%;
+        flex: none;
+    }
+
+    .tav-admin-account-nav {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .tav-admin-account-tab {
+        flex: 1 1 calc(50% - 4px);
+        min-width: 140px;
+    }
+
+    .tav-admin-account-content {
+        padding: 24px 20px;
+    }
+}
+
 @media (max-width: 768px) {
     .tav-admin-account-wrap {
         flex-direction: column;
@@ -5034,6 +4913,32 @@ body.tav-admin-portal-page .tav-main {
     .tav-admin-account-nav {
         flex-direction: row;
         flex-wrap: wrap;
+    }
+
+    .tav-admin-account-content {
+        padding: 20px 16px;
+    }
+
+    .tav-admin-account-content .ccc-account-avatar img,
+    .tav-admin-account-content .ccc-account-avatar img.avatar,
+    .tav-admin-account-content .ccc-account-avatar img.gravatar {
+        width: min(160px, 65vw) !important;
+        height: min(160px, 65vw) !important;
+        max-width: min(160px, 65vw) !important;
+    }
+
+    .tav-admin-account-content .ccc-profile-summary {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .tav-admin-account-content .ccc-profile-edit-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .tav-native-field input {
+        max-width: 100%;
     }
 
     .tav-email-settings-card {
@@ -5503,17 +5408,17 @@ body.tav-admin-portal-page .tav-main {
 
 /* Better mobile table */
 @media (max-width: 1100px) {
-    .tav-boutique-table th:nth-child(4),
-    .tav-boutique-table td:nth-child(4) {
+    .tav-boutique-table:not(.tav-requests-table) th:nth-child(4),
+    .tav-boutique-table:not(.tav-requests-table) td:nth-child(4) {
         display: none;
     }
 }
 
 @media (max-width: 900px) {
-    .tav-boutique-table th:nth-child(3),
-    .tav-boutique-table td:nth-child(3),
-    .tav-boutique-table th:nth-child(6),
-    .tav-boutique-table td:nth-child(6) {
+    .tav-boutique-table:not(.tav-requests-table) th:nth-child(3),
+    .tav-boutique-table:not(.tav-requests-table) td:nth-child(3),
+    .tav-boutique-table:not(.tav-requests-table) th:nth-child(6),
+    .tav-boutique-table:not(.tav-requests-table) td:nth-child(6) {
         display: none;
     }
 }
@@ -5548,33 +5453,106 @@ body.tav-admin-portal-page .tav-main {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   REQUESTS TABLE SPECIFIC
+   REQUESTS TABLE SPECIFIC — keep all columns; scroll on narrow viewports
    ══════════════════════════════════════════════════════════════ */
 
-@media (max-width: 1100px) {
+/* Never hide requests columns (table also uses .tav-boutique-table) */
+.tav-requests-table th,
+.tav-requests-table td {
+    display: table-cell !important;
+}
+
+.tav-requests-table thead {
+    display: table-header-group !important;
+}
+
+.tav-requests-table tbody {
+    display: table-row-group !important;
+}
+
+.tav-requests-table tbody tr {
+    display: table-row !important;
+}
+
+@media (max-width: 768px) {
+    .tav-boutique-table-wrap.tav-requests-table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-x: contain;
+    }
+
+    .tav-requests-table-wrap .tav-requests-table {
+        min-width: 820px;
+        width: max(100%, 820px);
+        table-layout: fixed;
+    }
+
+    .tav-requests-table thead th,
+    .tav-requests-table tbody td {
+        padding: 12px 10px;
+        font-size: 12px;
+    }
+
+    .tav-requests-table .tav-col-project {
+        width: 20%;
+        min-width: 120px;
+        max-width: 0;
+    }
+
     .tav-requests-table .tav-col-client {
-        display: none;
+        width: 14%;
+        min-width: 90px;
     }
-}
 
-@media (max-width: 900px) {
+    .tav-requests-table .tav-col-status {
+        width: 16%;
+        min-width: 130px;
+    }
+
+    .tav-requests-table .tav-col-submitted,
     .tav-requests-table .tav-col-due {
-        display: none;
+        width: 11%;
+        min-width: 95px;
     }
-}
 
-@media (max-width: 700px) {
-    .tav-requests-table .tav-col-submitted {
-        display: none;
+    .tav-requests-table .tav-col-actions {
+        width: 28%;
+        min-width: 160px;
+        position: sticky;
+        right: 0;
+        z-index: 2;
+        background: var(--tav-card-bg);
+        box-shadow: -6px 0 12px rgba(15, 23, 42, 0.06);
     }
-    
-    .tav-project-name {
-        font-size: 13px;
+
+    .tav-requests-table thead th.tav-col-actions {
+        background: #f8fafc;
+        z-index: 3;
     }
-    
-    .tav-status-badge {
-        font-size: 10px;
-        padding: 3px 8px;
+
+    .tav-requests-table tbody tr:hover td.tav-col-actions {
+        background: #f8fafc;
+    }
+
+    .tav-requests-table .tav-action-buttons {
+        flex-direction: column;
+        align-items: stretch;
+        flex-wrap: nowrap;
+        gap: 6px;
+    }
+
+    .tav-requests-table .tav-action-btn {
+        width: 100%;
+        min-height: 36px;
+        padding: 6px 10px;
+        font-size: 11px;
+        white-space: normal;
+        text-align: center;
+    }
+
+    .tav-requests-table .tav-status-badge {
+        font-size: 11px;
+        padding: 4px 8px;
     }
 }
 
@@ -5710,22 +5688,7 @@ body.tav-admin-portal-page .tav-main {
 .tav-storytellers-search {
     flex: 1;
     min-width: 0;
-}
-
-.tav-storytellers-search .tav-search-input {
-    width: 100%;
-    padding: 12px 16px 12px 44px;
-    border: 1px solid var(--tav-border);
     border-radius: 10px;
-    font-size: 14px;
-    background: var(--tav-card-bg);
-    transition: border-color .15s ease, box-shadow .15s ease;
-}
-
-.tav-storytellers-search .tav-search-input:focus {
-    outline: none;
-    border-color: var(--tav-accent);
-    box-shadow: 0 0 0 3px rgba(38, 158, 178, .1);
 }
 
 .tav-storytellers-filters {

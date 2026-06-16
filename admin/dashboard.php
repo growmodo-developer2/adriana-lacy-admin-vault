@@ -1388,31 +1388,27 @@ function tav_render_dashboard(): void
             <aside class="tav-sidebar" id="tav-sidebar">
                 <div class="tav-sidebar-header">
                     <div class="tav-sidebar-brand">
-                        <div class="tav-sidebar-logo" aria-hidden="true">
-                            <span class="tav-sidebar-logo-mark">VS</span>
-                        </div>
-                        <div class="tav-sidebar-brand-text">
-                            <span class="tav-sidebar-brand-title"><?php esc_html_e('Verified', 'the-admin-vault'); ?></span>
-                            <span class="tav-sidebar-brand-sub"><?php esc_html_e('Storytellers', 'the-admin-vault'); ?></span>
-                        </div>
+                        <button type="button"
+                                class="tav-sidebar-logo-btn"
+                                id="tav-sidebar-logo-toggle"
+                                aria-label="<?php esc_attr_e('Toggle sidebar', 'the-admin-vault'); ?>"
+                                aria-expanded="true"
+                                aria-controls="tav-sidebar"
+                                title="<?php esc_attr_e('Toggle menu', 'the-admin-vault'); ?>">
+                            <span class="tav-sidebar-logo" aria-hidden="true">
+                                <img class="tav-sidebar-logo-img tav-sidebar-logo-img--collapsed"
+                                     src="<?php echo esc_url(TAV_PLUGIN_URL . 'assets/images/logo-collapsed.svg'); ?>"
+                                     width="70"
+                                     height="41"
+                                     alt="" />
+                                <img class="tav-sidebar-logo-img tav-sidebar-logo-img--expanded"
+                                     src="<?php echo esc_url(TAV_PLUGIN_URL . 'assets/images/logo-expanded.svg'); ?>"
+                                     width="145"
+                                     height="41"
+                                     alt="<?php esc_attr_e('Verified Storytellers', 'the-admin-vault'); ?>" />
+                            </span>
+                        </button>
                     </div>
-                    <button type="button"
-                            class="tav-sidebar-collapse-btn"
-                            id="tav-sidebar-collapse"
-                            aria-label="<?php esc_attr_e('Toggle sidebar', 'the-admin-vault'); ?>"
-                            aria-expanded="true"
-                            aria-controls="tav-sidebar">
-                        <svg class="tav-collapse-icon tav-collapse-icon--collapse" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-                            <path d="M9 3v18"></path>
-                            <path d="M14 9l3 3-3 3"></path>
-                        </svg>
-                        <svg class="tav-collapse-icon tav-collapse-icon--expand" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-                            <path d="M9 3v18"></path>
-                            <path d="M16 9l-3 3 3 3"></path>
-                        </svg>
-                    </button>
                 </div>
 
                 <div class="tav-sidebar-section-label">
@@ -1518,31 +1514,8 @@ function tav_render_dashboard(): void
                 </div>
             </aside>
 
-            <div class="tav-sidebar-overlay"
-                 id="tav-sidebar-overlay"
-                 role="button"
-                 aria-label="<?php esc_attr_e('Close menu', 'the-admin-vault'); ?>"
-                 aria-hidden="true"
-                 tabindex="-1"></div>
-
             <!-- ═══ CONTENT ═══════════════════════════════════ -->
             <div class="tav-content-column">
-            <div class="tav-mobile-header">
-                <button type="button"
-                        class="tav-mobile-menu-btn"
-                        id="tav-mobile-menu-btn"
-                        aria-label="<?php esc_attr_e('Open menu', 'the-admin-vault'); ?>"
-                        aria-expanded="false"
-                        aria-controls="tav-sidebar">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <line x1="3" y1="6" x2="21" y2="6"></line>
-                        <line x1="3" y1="12" x2="21" y2="12"></line>
-                        <line x1="3" y1="18" x2="21" y2="18"></line>
-                    </svg>
-                </button>
-                <span class="tav-mobile-header-title"><?php esc_html_e('Verified Storytellers', 'the-admin-vault'); ?></span>
-            </div>
-
             <div class="tav-content">
 
                 <?php

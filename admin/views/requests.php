@@ -106,7 +106,7 @@ $filter_statuses = [
                 <circle cx="11" cy="11" r="8"></circle>
                 <path d="m21 21-4.35-4.35"></path>
             </svg>
-            <input type="text" name="req_search" value="<?php echo esc_attr($search_query); ?>" placeholder="<?php esc_attr_e('Search', 'the-admin-vault'); ?>" class="tav-requests-search">
+            <input type="text" name="req_search" value="<?php echo esc_attr($search_query); ?>" placeholder="<?php esc_attr_e('Search', 'the-admin-vault'); ?>" class="tav-search-input">
         </div>
     </form>
     
@@ -340,7 +340,7 @@ $filter_statuses = [
                     $status_info = $status_config[$status] ?? ['label' => ucwords(str_replace('_', ' ', $status)), 'class' => 'tav-status-pending'];
             ?>
                     <tr>
-                        <td class="tav-col-project">
+                        <td class="tav-col-project" data-label="<?php esc_attr_e('Project Name', 'the-admin-vault'); ?>">
                             <div class="tav-project-cell">
                                 <span class="tav-project-indicator"></span>
                                 <span class="tav-project-name <?php echo $name_not_available ? 'tav-project-name--unavailable' : ''; ?>" 
@@ -349,16 +349,16 @@ $filter_statuses = [
                                 </span>
                             </div>
                         </td>
-                        <td class="tav-col-client"><?php echo esc_html($client_name); ?></td>
-                        <td class="tav-col-status">
+                        <td class="tav-col-client" data-label="<?php esc_attr_e('Client', 'the-admin-vault'); ?>"><?php echo esc_html($client_name); ?></td>
+                        <td class="tav-col-status" data-label="<?php esc_attr_e('Status', 'the-admin-vault'); ?>">
                             <span class="tav-status-badge <?php echo esc_attr($status_info['class']); ?>">
                                 <span class="tav-status-dot"></span>
                                 <?php echo esc_html($status_info['label']); ?>
                             </span>
                         </td>
-                        <td class="tav-col-submitted"><?php echo esc_html($date_submitted); ?></td>
-                        <td class="tav-col-due"><?php echo esc_html($due_date); ?></td>
-                        <td class="tav-col-actions">
+                        <td class="tav-col-submitted" data-label="<?php esc_attr_e('Date Submitted', 'the-admin-vault'); ?>"><?php echo esc_html($date_submitted); ?></td>
+                        <td class="tav-col-due" data-label="<?php esc_attr_e('Date Due', 'the-admin-vault'); ?>"><?php echo esc_html($due_date); ?></td>
+                        <td class="tav-col-actions" data-label="<?php esc_attr_e('Actions', 'the-admin-vault'); ?>">
                             <div class="tav-action-buttons">
                                 <?php if ($name_not_available): ?>
                                     <button type="button"

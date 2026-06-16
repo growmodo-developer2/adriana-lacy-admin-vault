@@ -134,11 +134,14 @@ function tav_enqueue_admin_portal_assets(): void
 {
     wp_enqueue_style('dashicons');
 
+    $css_path = TAV_PLUGIN_DIR . 'assets/css/tav-dashboard.css';
+    $css_ver  = file_exists($css_path) ? (string) filemtime($css_path) : TAV_VERSION;
+
     wp_enqueue_style(
         'tav-dashboard',
         TAV_PLUGIN_URL . 'assets/css/tav-dashboard.css',
         ['dashicons'],
-        TAV_VERSION
+        $css_ver
     );
 
     wp_enqueue_style(
@@ -325,6 +328,23 @@ function tav_admin_portal_handle_post_actions(): void
     }
 }
 add_action('template_redirect', 'tav_admin_portal_handle_post_actions', 0);
+
+/**
+ * The admin dashboard is a full-screen operator console, so drop the
+ * WordPress admin bar and the top-margin offset it injects (the
+ * html { margin-top } rules) to keep the layout flush to the top.
+ */
+function tav_disable_admin_bar_on_portal(): void
+{
+    if (is_admin() || !tav_is_admin_portal_page()) {
+        return;
+    }
+
+    add_filter('show_admin_bar', '__return_false');
+    remove_action('wp_head', '_admin_bar_bump_cb');
+    remove_action('wp_footer', '_admin_bar_bump_cb');
+}
+add_action('wp', 'tav_disable_admin_bar_on_portal');
 
 function tav_admin_portal_access_guard(): void
 {

@@ -1,15 +1,8 @@
 jQuery(document).ready(function ($) {
     const $sidebar = $('#tav-sidebar');
-    const $collapseBtn = $('#tav-sidebar-collapse');
+    const $logoToggle = $('#tav-sidebar-logo-toggle');
     const $wrap = $('.tav-dashboard-wrap');
-    const $mobileMenuBtn = $('#tav-mobile-menu-btn');
-    const $sidebarOverlay = $('#tav-sidebar-overlay');
     const storageKey = 'tav_sidebar_collapsed';
-    const mobileBreakpoint = 960;
-
-    function tavIsMobileNav() {
-        return window.matchMedia('(max-width: ' + mobileBreakpoint + 'px)').matches;
-    }
 
     function tavApplySidebarState(collapsed) {
         if (!$sidebar.length) {
@@ -19,78 +12,22 @@ jQuery(document).ready(function ($) {
         $sidebar.toggleClass('collapsed', collapsed);
         $wrap.toggleClass('is-sidebar-collapsed', collapsed);
 
-        if ($collapseBtn.length) {
-            $collapseBtn.attr('aria-expanded', collapsed ? 'false' : 'true');
+        if ($logoToggle.length) {
+            $logoToggle.attr('aria-expanded', collapsed ? 'false' : 'true');
         }
     }
 
-    function tavSetMobileNavOpen(open) {
-        $wrap.toggleClass('is-mobile-nav-open', open);
-
-        if ($mobileMenuBtn.length) {
-            $mobileMenuBtn.attr('aria-expanded', open ? 'true' : 'false');
-            $mobileMenuBtn.attr(
-                'aria-label',
-                open ? 'Close menu' : 'Open menu'
-            );
-        }
-
-        if ($sidebarOverlay.length) {
-            $sidebarOverlay.attr('aria-hidden', open ? 'false' : 'true');
-            $sidebarOverlay.attr('tabindex', open ? '0' : '-1');
-        }
-
-        $('body').toggleClass('tav-mobile-nav-open', open);
-    }
-
-    function tavCloseMobileNav() {
-        tavSetMobileNavOpen(false);
-    }
-
-    if ($sidebar.length && $collapseBtn.length) {
+    if ($sidebar.length) {
         const stored = localStorage.getItem(storageKey);
         tavApplySidebarState(stored === 'true');
 
-        $collapseBtn.on('click', function (event) {
+        $logoToggle.on('click', function (event) {
             event.preventDefault();
             const collapsed = !$sidebar.hasClass('collapsed');
             tavApplySidebarState(collapsed);
             localStorage.setItem(storageKey, collapsed ? 'true' : 'false');
         });
     }
-
-    if ($mobileMenuBtn.length) {
-        $mobileMenuBtn.on('click', function (event) {
-            event.preventDefault();
-            tavSetMobileNavOpen(!$wrap.hasClass('is-mobile-nav-open'));
-        });
-    }
-
-    if ($sidebarOverlay.length) {
-        $sidebarOverlay.on('click', function () {
-            tavCloseMobileNav();
-        });
-
-        $sidebarOverlay.on('keydown', function (e) {
-            if (e.key === 'Enter' || e.key === ' ' || e.keyCode === 13 || e.keyCode === 32) {
-                e.preventDefault();
-                tavCloseMobileNav();
-            }
-        });
-    }
-
-    $sidebar.on('click', '.tav-sidebar-nav a, .tav-sidebar-user-card', function () {
-        if (tavIsMobileNav()) {
-            tavCloseMobileNav();
-        }
-    });
-
-    $(window).on('resize', function () {
-        if (!tavIsMobileNav()) {
-            tavCloseMobileNav();
-        }
-    });
-    
     // ── Requests Page: Filters Toggle ──────────────────────────────
     const $filtersToggle = $('#tav-toggle-filters');
     const $advancedFilters = $('#tav-advanced-filters');
@@ -553,13 +490,9 @@ jQuery(document).ready(function ($) {
         });
     });
 
-    // Escape key closes mobile nav or whichever modal is open.
+    // Escape key closes whichever modal is open.
     $(document).on('keydown', function (e) {
         if (e.key === 'Escape' || e.keyCode === 27) {
-            if ($wrap.hasClass('is-mobile-nav-open')) {
-                tavCloseMobileNav();
-                return;
-            }
             if ($modal.is(':visible'))       $modal.fadeOut(200);
             if ($clientModal.is(':visible')) $clientModal.fadeOut(200);
         }
