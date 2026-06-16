@@ -375,7 +375,58 @@ body.tav-admin-portal-page .tav-sidebar {
     padding: 0;
     margin: 0 auto;
     box-sizing: border-box;
-    overflow: hidden;
+    overflow: visible;
+}
+
+/* Collapsed sidebar hover tooltips */
+.tav-sidebar.collapsed {
+    overflow: visible;
+}
+
+.tav-sidebar.collapsed .tav-sidebar-nav,
+.tav-sidebar.collapsed .tav-sidebar-nav-bottom,
+.tav-sidebar.collapsed .tav-sidebar-bottom-section {
+    overflow: visible;
+}
+
+.tav-sidebar.collapsed .tav-sidebar-user-card {
+    overflow: visible;
+}
+
+.tav-sidebar.collapsed [data-tooltip] {
+    position: relative;
+}
+
+.tav-sidebar.collapsed [data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: calc(100% + 12px);
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 8px 12px;
+    background: #0f172a;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.2);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.15s ease, visibility 0.15s ease;
+    z-index: 500;
+}
+
+.tav-sidebar.collapsed [data-tooltip]:hover::after,
+.tav-sidebar.collapsed [data-tooltip]:focus-visible::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+.tav-sidebar.collapsed #tav-sidebar-logo-toggle[data-tooltip]::after {
+    z-index: 501;
 }
 
 .tav-sidebar.collapsed .tav-sidebar-nav a span:not(.tav-nav-icon):not(.tav-nav-badge) {
@@ -389,10 +440,12 @@ body.tav-admin-portal-page .tav-sidebar {
     padding: 8px 6px;
 }
 
-.tav-sidebar.collapsed .tav-sidebar-nav li {
+.tav-sidebar.collapsed .tav-sidebar-nav li,
+.tav-sidebar.collapsed .tav-sidebar-nav-bottom li {
     display: flex;
     justify-content: center;
     margin-bottom: 6px;
+    overflow: visible;
 }
 
 .tav-sidebar.collapsed .tav-sidebar-nav-bottom li {
@@ -498,6 +551,54 @@ body.tav-admin-portal-page .tav-sidebar {
     margin-bottom: 12px;
 }
 
+/* Mobile: collapsed = icon rail; expanded = overlay on content */
+@media (max-width: 768px) {
+    .tav-dashboard-wrap.is-mobile-sidebar {
+        --tav-current-sidebar-w: 0px;
+        --tav-sidebar-left: 0;
+    }
+
+    .tav-dashboard-wrap.is-mobile-sidebar .tav-content-column {
+        margin-left: 0 !important;
+        width: 100%;
+        box-sizing: border-box;
+        transition: padding-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .tav-dashboard-wrap.is-mobile-sidebar.is-sidebar-collapsed .tav-content-column {
+        padding-left: var(--tav-sidebar-collapsed-w);
+    }
+
+    .tav-dashboard-wrap.is-mobile-sidebar.is-sidebar-collapsed .tav-sidebar {
+        width: var(--tav-sidebar-collapsed-w);
+        left: 0;
+        z-index: 200;
+    }
+
+    .tav-dashboard-wrap.is-mobile-sidebar.is-sidebar-open .tav-sidebar {
+        width: min(280px, 85vw);
+        left: 0;
+        z-index: 300;
+        box-shadow: 4px 0 24px rgba(15, 23, 42, 0.18);
+    }
+
+    .tav-sidebar-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.45);
+        z-index: 250;
+    }
+
+    .tav-dashboard-wrap.is-mobile-sidebar.is-sidebar-open .tav-sidebar-backdrop {
+        display: block;
+    }
+
+    .tav-mobile-menu-btn {
+        display: none !important;
+    }
+}
+
 /* User Profile Card */
 .tav-sidebar-user-card {
     display: flex;
@@ -579,7 +680,7 @@ body.tav-admin-portal-page .tav-sidebar {
     margin: 0 auto;
     justify-content: center;
     box-sizing: border-box;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .tav-sidebar.collapsed .tav-sidebar-nav-bottom .tav-sidebar-nav a,
@@ -1331,6 +1432,13 @@ body.tav-admin-portal-page .tav-main {
     .tav-front-portal .tav-content,
     body.tav-admin-portal-page .tav-content {
         padding: 20px 16px 40px;
+    }
+}
+
+@media (max-width: 768px) {
+    .tav-dashboard-wrap .tav-content-column {
+        margin-left: 0 !important;
+        width: 100%;
     }
 }
 

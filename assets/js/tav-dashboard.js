@@ -3,29 +3,139 @@ jQuery(document).ready(function ($) {
     const $logoToggle = $('#tav-sidebar-logo-toggle');
     const $wrap = $('.tav-dashboard-wrap');
     const storageKey = 'tav_sidebar_collapsed';
+    const mobileQuery = window.matchMedia('(max-width: 768px)');
 
-    function tavApplySidebarState(collapsed) {
+    function tavIsMobileSidebar() {
+        return mobileQuery.matches;
+    }
+
+    function tavEnsureBackdrop() {
+        if (!$wrap.length || $('#tav-sidebar-backdrop').length) {
+            return;
+        }
+
+        $('<div>', {
+            id: 'tav-sidebar-backdrop',
+            class: 'tav-sidebar-backdrop',
+            'aria-hidden': 'true',
+        }).appendTo($wrap).on('click', function () {
+            if (tavIsMobileSidebar() && !$sidebar.hasClass('collapsed')) {
+                tavApplySidebarState(true, { skipStorage: true });
+            }
+        });
+    }
+
+    function tavApplySidebarState(collapsed, options = {}) {
         if (!$sidebar.length) {
             return;
         }
 
         $sidebar.toggleClass('collapsed', collapsed);
         $wrap.toggleClass('is-sidebar-collapsed', collapsed);
+        $wrap.toggleClass('is-sidebar-open', tavIsMobileSidebar() && !collapsed);
+        $wrap.toggleClass('is-mobile-sidebar', tavIsMobileSidebar());
 
         if ($logoToggle.length) {
             $logoToggle.attr('aria-expanded', collapsed ? 'false' : 'true');
         }
+
+        $('#tav-sidebar-backdrop').attr('aria-hidden', collapsed || !tavIsMobileSidebar() ? 'true' : 'false');
+
+        if (!options.skipStorage && !tavIsMobileSidebar()) {
+            localStorage.setItem(storageKey, collapsed ? 'true' : 'false');
+        }
+
+        tavSyncCollapsedTooltips();
+    }
+
+    function tavGetTooltipLabel(el) {
+        const $el = $(el);
+        let label = $el.data('tooltipLabel');
+
+        if (label) {
+            return label;
+        }
+
+        label = $el.attr('title');
+        if (label) {
+            return label;
+        }
+
+        const navText = $el.find('.tav-nav-text').first().text();
+        if (navText) {
+            return navText.replace(/\s+/g, ' ').trim();
+        }
+
+        const userName = $el.find('.tav-user-name').first().text();
+        if (userName) {
+            return userName.replace(/\s+/g, ' ').trim();
+        }
+
+        return '';
+    }
+
+    function tavSyncCollapsedTooltips() {
+        if (!$sidebar.length) {
+            return;
+        }
+
+        const collapsed = $sidebar.hasClass('collapsed');
+        const $tooltipTargets = $sidebar.find('.tav-sidebar-nav a, .tav-sidebar-user-card');
+
+        $tooltipTargets.each(function () {
+            const label = tavGetTooltipLabel(this);
+
+            if (!label) {
+                return;
+            }
+
+            $(this).data('tooltipLabel', label);
+
+            if (collapsed) {
+                $(this).attr('data-tooltip', label).removeAttr('title');
+            } else {
+                $(this).removeAttr('data-tooltip').attr('title', label);
+            }
+        });
+    }
+
+    function tavSyncSidebarForViewport() {
+        if (!$sidebar.length) {
+            return;
+        }
+
+        tavEnsureBackdrop();
+
+        if (tavIsMobileSidebar()) {
+            tavApplySidebarState(true, { skipStorage: true });
+            return;
+        }
+
+        tavApplySidebarState(localStorage.getItem(storageKey) === 'true', { skipStorage: true });
     }
 
     if ($sidebar.length) {
-        const stored = localStorage.getItem(storageKey);
-        tavApplySidebarState(stored === 'true');
+        $('#tav-mobile-menu-btn').remove();
+
+        tavSyncSidebarForViewport();
+        tavSyncCollapsedTooltips();
+
+        if (typeof mobileQuery.addEventListener === 'function') {
+            mobileQuery.addEventListener('change', tavSyncSidebarForViewport);
+        } else if (typeof mobileQuery.addListener === 'function') {
+            mobileQuery.addListener(tavSyncSidebarForViewport);
+        }
 
         $logoToggle.on('click', function (event) {
             event.preventDefault();
             const collapsed = !$sidebar.hasClass('collapsed');
-            tavApplySidebarState(collapsed);
-            localStorage.setItem(storageKey, collapsed ? 'true' : 'false');
+            tavApplySidebarState(collapsed, { skipStorage: tavIsMobileSidebar() });
+        });
+
+        $sidebar.find('a').on('click', function () {
+            if (tavIsMobileSidebar() && !$sidebar.hasClass('collapsed')) {
+                tavApplySidebarState(true, { skipStorage: true });
+            }
         });
     }
     // ── Requests Page: Filters Toggle ──────────────────────────────
@@ -490,11 +600,14 @@ jQuery(document).ready(function ($) {
         });
     });
 
-    // Escape key closes whichever modal is open.
+    // Escape key closes whichever modal is open, or the mobile sidebar.
     $(document).on('keydown', function (e) {
         if (e.key === 'Escape' || e.keyCode === 27) {
             if ($modal.is(':visible'))       $modal.fadeOut(200);
             if ($clientModal.is(':visible')) $clientModal.fadeOut(200);
+            if (tavIsMobileSidebar() && $wrap.hasClass('is-sidebar-open')) {
+                tavApplySidebarState(true, { skipStorage: true });
+            }
         }
     });
 });
