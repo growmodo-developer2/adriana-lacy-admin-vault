@@ -40,10 +40,10 @@ body.tav-admin-portal-page .tav-dashboard-wrap select,
     outline: none;
 }
 
-body.tav-admin-portal-page .tav-dashboard-wrap input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
+body.tav-admin-portal-page .tav-dashboard-wrap input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not(.tav-search-input):not(.tav-tags-input),
 body.tav-admin-portal-page .tav-dashboard-wrap textarea,
 body.tav-admin-portal-page .tav-dashboard-wrap select,
-.tav-front-portal.tav-dashboard-wrap input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
+.tav-front-portal.tav-dashboard-wrap input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not(.tav-search-input):not(.tav-tags-input),
 .tav-front-portal.tav-dashboard-wrap textarea,
 .tav-front-portal.tav-dashboard-wrap select {
     border: 1px solid var(--tav-border, #e2e8f0) !important;
@@ -52,10 +52,60 @@ body.tav-admin-portal-page .tav-dashboard-wrap select,
 }
 
 body.tav-admin-portal-page .tav-dashboard-wrap .tav-search-input-wrap input,
-.tav-front-portal.tav-dashboard-wrap .tav-search-input-wrap input {
+.tav-front-portal.tav-dashboard-wrap .tav-search-input-wrap input,
+body.tav-page .tav-dashboard-wrap .tav-search-input-wrap input {
     border: none !important;
     background: transparent !important;
     box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+    outline: none !important;
+    border-radius: 0 !important;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+body.tav-admin-portal-page .tav-dashboard-wrap .tav-search-input-wrap input:focus,
+.tav-front-portal.tav-dashboard-wrap .tav-search-input-wrap input:focus,
+body.tav-page .tav-dashboard-wrap .tav-search-input-wrap input:focus {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+    outline: none !important;
+}
+
+/* Organization tags — inner input must never get its own border */
+body.tav-admin-portal-page .tav-dashboard-wrap .tav-tags-input-wrap > input.tav-tags-input,
+body.tav-admin-portal-page .tav-dashboard-wrap .tav-tags-input-wrap > #tags_input,
+.tav-front-portal.tav-dashboard-wrap .tav-tags-input-wrap > input.tav-tags-input,
+body.tav-page .tav-dashboard-wrap .tav-tags-input-wrap > input.tav-tags-input,
+body.tav-page .tav-dashboard-wrap .tav-tags-input-wrap > #tags_input,
+#wpbody-content .wp-core-ui .tav-dashboard-wrap .tav-tags-input-wrap > #tags_input,
+#wpbody-content .wp-core-ui .tav-dashboard-wrap .tav-tags-input-wrap > input.tav-tags-input {
+    border: 0 !important;
+    border-width: 0 !important;
+    border-style: none !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+    outline: 0 !important;
+    outline-offset: 0 !important;
+    border-radius: 0 !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+}
+
+body.tav-admin-portal-page .tav-dashboard-wrap .tav-tags-input-wrap > input.tav-tags-input:focus,
+body.tav-admin-portal-page .tav-dashboard-wrap .tav-tags-input-wrap > input.tav-tags-input:focus-visible,
+.tav-front-portal.tav-dashboard-wrap .tav-tags-input-wrap > input.tav-tags-input:focus,
+body.tav-page .tav-dashboard-wrap .tav-tags-input-wrap > #tags_input:focus,
+#wpbody-content .wp-core-ui .tav-dashboard-wrap .tav-tags-input-wrap > #tags_input:focus {
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+    outline: 0 !important;
 }
 
 body.tav-admin-portal-page .tav-dashboard-wrap .tav-admin-um-account input.um-iconed,

@@ -541,7 +541,7 @@ if ($is_storytellers):
                             </span>
                         <?php endforeach; ?>
                     </div>
-                    <input type="text" id="tags_input" placeholder="<?php esc_attr_e('Type and press Enter to add tag...', 'the-admin-vault'); ?>">
+                    <input type="text" id="tags_input" class="tav-tags-input" placeholder="<?php esc_attr_e('Type and press Enter to add tag...', 'the-admin-vault'); ?>">
                     <input type="hidden" name="organization_tags" id="organization_tags" value="<?php echo esc_attr($org_tags); ?>">
                 </div>
             </div>
